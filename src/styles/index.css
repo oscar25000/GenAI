@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  background: #07060B;
+  color: #F4F1FF;
+  font-feature-settings: 'ss01', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display',
+    'Segoe UI', system-ui, sans-serif;
+}
+
+::selection {
+  background: rgba(130, 87, 255, 0.35);
+  color: #fff;
+}
+
+/* Subtle radial backdrop for premium feel */
+.app-bg {
+  background:
+    radial-gradient(1200px 600px at 90% -10%, rgba(106, 59, 245, 0.18), transparent 60%),
+    radial-gradient(800px 500px at -10% 10%, rgba(130, 87, 255, 0.12), transparent 60%),
+    radial-gradient(800px 500px at 50% 110%, rgba(84, 41, 214, 0.12), transparent 60%),
+    #07060B;
+}
+
+.glass {
+  background: linear-gradient(180deg, rgba(31, 29, 46, 0.7) 0%, rgba(17, 16, 26, 0.7) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(14px);
+}
+
+.glass-strong {
+  background: linear-gradient(180deg, rgba(42, 40, 64, 0.85) 0%, rgba(24, 23, 36, 0.85) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.divider {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  height: 1px;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(130, 87, 255, 0.35);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #B59CFF 0%, #8257FF 50%, #6A3BF5 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.ring-violet {
+  box-shadow: 0 0 0 1px rgba(130, 87, 255, 0.4),
+    0 0 30px -5px rgba(130, 87, 255, 0.35);
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.02) 0%,
+    rgba(130, 87, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  background-size: 200% 100%;
+}
+
+button {
+  font-family: inherit;
+}

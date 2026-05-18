@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "EpiPilot",
+  "short_name": "EpiPilot",
+  "version": "0.1.0",
+  "description": "Transforme ton sujet Epitech en plan de projet clair, organisé et prêt à exécuter.",
+  "action": {
+    "default_title": "EpiPilot",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": ["storage", "tabs"],
+  "host_permissions": [
+    "https://intra.epitech.eu/*",
+    "https://*.epitech.eu/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["dashboard.html", "assets/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
