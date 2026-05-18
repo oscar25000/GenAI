@@ -11,6 +11,7 @@ import TeamSection from '../components/TeamSection.jsx'
 import RisksSection from '../components/RisksSection.jsx'
 import ChecklistSection from '../components/ChecklistSection.jsx'
 import ExportSection from '../components/ExportSection.jsx'
+import SettingsModal from '../components/SettingsModal.jsx'
 
 function loadProject() {
   if (typeof chrome !== 'undefined' && chrome.storage?.local) {
@@ -31,9 +32,29 @@ function loadProject() {
 export default function Dashboard() {
   const [project, setProject] = useState(mockProject)
   const [section, setSection] = useState('overview')
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   useEffect(() => {
     loadProject().then(setProject)
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (window.location.hash === '#settings') {
+      setSettingsOpen(true)
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof chrome === 'undefined' || !chrome.runtime?.onMessage) return
+    const handler = (msg) => {
+      if (msg?.type === 'epipilot:done' && msg.project) {
+        setProject(msg.project)
+      }
+    }
+    chrome.runtime.onMessage.addListener(handler)
+    return () => chrome.runtime.onMessage.removeListener(handler)
   }, [])
 
   const teamWithLoad = useMemo(() => computeTeamLoad(project), [project])
@@ -58,7 +79,11 @@ export default function Dashboard() {
     <div className="min-h-screen w-full app-bg text-violet-50 flex">
       <Sidebar current={section} onChange={setSection} project={project} />
       <main className="flex-1 min-w-0 flex flex-col">
-        <TopBar project={project} section={section} />
+        <TopBar
+          project={project}
+          section={section}
+          onOpenSettings={() => setSettingsOpen(true)}
+        />
         <div className="flex-1 overflow-y-auto scrollbar-thin">
           <div className="max-w-[1400px] mx-auto px-8 py-8 animate-fade-in">
             {section === 'overview' && (
@@ -92,6 +117,11 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+
+      <SettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
     </div>
   )
 }

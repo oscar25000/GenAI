@@ -8,10 +8,13 @@ function copyExtensionAssets() {
     name: 'copy-extension-assets',
     closeBundle() {
       const distDir = resolve(__dirname, 'dist')
-      copyFileSync(
-        resolve(__dirname, 'public/manifest.json'),
-        resolve(distDir, 'manifest.json'),
-      )
+      const filesToCopy = ['manifest.json', 'content.js']
+      for (const f of filesToCopy) {
+        const src = resolve(__dirname, 'public', f)
+        if (existsSync(src)) {
+          copyFileSync(src, resolve(distDir, f))
+        }
+      }
       const iconsSrc = resolve(__dirname, 'public/icons')
       if (existsSync(iconsSrc)) {
         const iconsDest = resolve(distDir, 'icons')

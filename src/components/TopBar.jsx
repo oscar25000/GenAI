@@ -1,4 +1,4 @@
-import { Search, Command, Bell, RefreshCw, FileText } from 'lucide-react'
+import { Search, Command, Bell, RefreshCw, FileText, Settings } from 'lucide-react'
 
 const SECTION_TITLES = {
   overview: 'Vue d\'ensemble',
@@ -12,7 +12,7 @@ const SECTION_TITLES = {
   export: 'Export',
 }
 
-export default function TopBar({ project, section }) {
+export default function TopBar({ project, section, onOpenSettings }) {
   const formattedDeadline = new Date(project.deadline).toLocaleDateString(
     'fr-FR',
     { day: '2-digit', month: 'short', year: 'numeric' },
@@ -54,6 +54,13 @@ export default function TopBar({ project, section }) {
           </button>
           <button className="p-2 rounded-xl bg-white/5 border border-white/10 hover:border-violet-400/40 transition">
             <Bell className="w-3.5 h-3.5 text-violet-200" />
+          </button>
+          <button
+            onClick={onOpenSettings}
+            className="p-2 rounded-xl bg-white/5 border border-white/10 hover:border-violet-400/40 transition"
+            title="Paramètres"
+          >
+            <Settings className="w-3.5 h-3.5 text-violet-200" />
           </button>
         </div>
       </div>
