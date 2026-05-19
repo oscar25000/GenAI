@@ -122,7 +122,7 @@ export default function ConversationSection({ onOpenFullDashboard }) {
     <div>
       <SectionHeader
         eyebrow="Conversation guidée"
-        title="Construis ton plan avec EpiPilot"
+        title="Construis ton plan avec Epilot"
         description={`Sujet : ${conversation.projectName || conversation.project?.name || 'projet Epitech'}. Réponds aux questions pour faire émerger l'architecture, l'équipe et le planning.`}
         action={
           <button
@@ -230,7 +230,7 @@ function UploadPrompt() {
         <div className="w-10 h-10 rounded-lg bg-indigo-600 grid place-items-center mx-auto mb-4">
           <Sparkles className="w-5 h-5 text-white" />
         </div>
-        <h3 className="text-[17px] font-semibold text-gray-900 mb-2">PDF reçu — EpiPilot lit le sujet…</h3>
+        <h3 className="text-[17px] font-semibold text-gray-900 mb-2">PDF reçu — Epilot lit le sujet…</h3>
         <p className="text-[13px] text-gray-500 flex items-center justify-center gap-2">
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
           Première analyse en cours
@@ -250,7 +250,7 @@ function UploadPrompt() {
         </h3>
         <p className="text-[13px] text-gray-500 leading-relaxed">
           Récupère le PDF du sujet depuis my.epitech.eu et glisse-le ici.
-          EpiPilot le lit, te fait un résumé, puis te pose les bonnes questions pour construire le plan.
+          Epilot le lit, te fait un résumé, puis te pose les bonnes questions pour construire le plan.
         </p>
       </div>
 

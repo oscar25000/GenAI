@@ -8,7 +8,7 @@ export default function TeamSection({ project, team }) {
         <div className="text-[11px] uppercase tracking-widest text-slate-400 font-semibold mb-1.5">Auto-assignation IA</div>
         <h1 className="text-[28px] font-bold text-slate-900 leading-tight">Équipe & compétences</h1>
         <p className="mt-2 text-[14px] text-slate-500 leading-relaxed">
-          EpiPilot a réparti les tâches selon les compétences déclarées. Tu peux ajuster manuellement à tout moment.
+          Epilot a réparti les tâches selon les compétences déclarées. Tu peux ajuster manuellement à tout moment.
         </p>
       </div>
 

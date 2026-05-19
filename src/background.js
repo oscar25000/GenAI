@@ -1,4 +1,4 @@
-// EpiPilot — service worker (MV3)
+// Epilot — service worker (MV3)
 //
 // Responsibilities:
 //  - Persist last analysis and live conversation state in chrome.storage

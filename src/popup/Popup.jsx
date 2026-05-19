@@ -181,8 +181,8 @@ export default function Popup() {
             <Sparkles className="w-3.5 h-3.5 text-white" />
           </div>
           <div className="leading-tight">
-            <div className="text-[13px] font-bold text-slate-900">EpiPilot</div>
-            <div className="text-[10px] text-slate-400">Copilote projet Epitech</div>
+            <div className="text-[13px] font-bold text-slate-900">Epilot</div>
+            <div className="text-[10px] text-slate-400">Gestion de projet</div>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -323,7 +323,7 @@ export default function Popup() {
       )}
 
       <div className="mt-auto text-center text-[10px] text-slate-400">
-        EpiPilot · v0.1 · Transforme ton sujet en plan de projet.
+        Epilot · v0.1 · Transforme ton sujet en plan de projet.
       </div>
     </div>
   )

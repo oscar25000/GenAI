@@ -1,5 +1,4 @@
 import {
-  Sparkles,
   LayoutDashboard,
   BookOpen,
   AlertTriangle,
@@ -30,14 +29,9 @@ export default function Sidebar({ current, onChange, project }) {
   return (
     <aside className="w-[210px] shrink-0 border-r border-slate-100 bg-white flex flex-col">
       <div className="px-4 pt-5 pb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-indigo-600 grid place-items-center shrink-0">
-            <Sparkles className="w-4 h-4 text-white" />
-          </div>
-          <div className="leading-tight">
-            <div className="text-[14px] font-bold text-slate-900">EpiPilot</div>
-            <div className="text-[11px] text-slate-400">Copilote projet</div>
-          </div>
+        <div className="leading-tight">
+          <div className="text-[15px] font-bold text-slate-900 tracking-tight">Epilot</div>
+          <div className="text-[11px] text-slate-400">Gestion de projet</div>
         </div>
       </div>
 

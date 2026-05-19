@@ -19,7 +19,7 @@ export default function RisksSection({ project }) {
         <div className="text-[11px] uppercase tracking-widest text-slate-400 font-semibold mb-1.5">Détection des risques</div>
         <h1 className="text-[28px] font-bold text-slate-900 leading-tight">Anticipe avant que ça parte en vrille</h1>
         <p className="mt-2 text-[14px] text-slate-500 leading-relaxed">
-          EpiPilot évalue les risques classiques d'un projet Epitech. Chaque risque vient avec sa mitigation.
+          Epilot évalue les risques classiques d'un projet Epitech. Chaque risque vient avec sa mitigation.
         </p>
       </div>
 

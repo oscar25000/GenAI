@@ -22,7 +22,7 @@ export default function TopNav({ current, onChange, project, onOpenSettings }) {
           <div className="w-7 h-7 rounded-xl bg-indigo-600 grid place-items-center">
             <Sparkles className="w-3.5 h-3.5 text-white" />
           </div>
-          <span className="text-[14px] font-bold text-slate-900">EpiPilot</span>
+          <span className="text-[14px] font-bold text-slate-900">Epilot</span>
         </div>
 
         <nav className="flex items-center gap-1 flex-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>

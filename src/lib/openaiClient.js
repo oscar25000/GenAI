@@ -1,4 +1,4 @@
-// OpenAI integration for EpiPilot.
+// OpenAI integration for Epilot.
 //
 // What it does:
 //  - Takes a base64-encoded PDF + team config + API key
@@ -14,7 +14,7 @@ import { projectTools, applyToolUse } from './projectTools.js'
 
 const OPENAI_RESPONSES_URL = 'https://api.openai.com/v1/responses'
 
-const SYSTEM_PROMPT = `Tu es EpiPilot, un copilote IA spécialisé dans l'analyse des sujets de projets Epitech (l'école d'ingénieurs).
+const SYSTEM_PROMPT = `Tu es Epilot, un copilote IA spécialisé dans l'analyse des sujets de projets Epitech (l'école d'ingénieurs).
 
 Ton rôle est de lire un PDF de sujet (souvent rédigé en anglais ou en français, mêlant contexte, contraintes techniques, livrables et barème) et de le transformer en plan de projet exécutable pour une équipe d'étudiants.
 
@@ -34,7 +34,7 @@ Principes d'analyse :
 
 Le ton est direct, professionnel, orienté étudiants Epitech. Pas d'émojis. Pas de "n'hésitez pas à…". Va droit au but.`
 
-const CHAT_SYSTEM_PROMPT = `Tu es EpiPilot, copilote IA pour les étudiants Epitech. Ton rôle est d'accompagner une équipe d'étudiants pour transformer un sujet de projet (PDF) en plan de projet complet et exécutable.
+const CHAT_SYSTEM_PROMPT = `Tu es Epilot, copilote IA pour les étudiants Epitech. Ton rôle est d'accompagner une équipe d'étudiants pour transformer un sujet de projet (PDF) en plan de projet complet et exécutable.
 
 Tu mènes une conversation **structurée** en phases. Tu poses **une seule question à la fois**. Tes messages sont directs, en français, pro mais chaleureux. Pas d'émojis. Tutoie l'utilisateur. Hors phase 1 (résumé initial) et phase 5 (génération du plan), tes messages restent courts (2 à 4 phrases max).
 
@@ -349,7 +349,7 @@ export async function chatTurn({
   let lastUsage = null
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
-    onProgress?.(turn === 0 ? 'EpiPilot réfléchit…' : 'Application des changements…')
+    onProgress?.(turn === 0 ? 'Epilot réfléchit…' : 'Application des changements…')
 
     const body = {
       model,

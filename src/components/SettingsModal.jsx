@@ -82,7 +82,7 @@ export default function SettingsModal({ open, onClose, onSaved }) {
               <Settings className="w-4 h-4 text-white" />
             </div>
             <div>
-              <div className="text-[15px] font-bold text-slate-900">Paramètres EpiPilot</div>
+              <div className="text-[15px] font-bold text-slate-900">Paramètres Epilot</div>
               <div className="text-[11px] text-slate-400">Clé API · modèle · équipe</div>
             </div>
           </div>
@@ -220,7 +220,7 @@ export default function SettingsModal({ open, onClose, onSaved }) {
           <div className="text-[11px] text-slate-400">
             {apiKey
               ? 'Une clé est définie. Les analyses utiliseront OpenAI.'
-              : 'Aucune clé : EpiPilot tournera en mode démo (données mock).'}
+              : 'Aucune clé : Epilot tournera en mode démo (données mock).'}
           </div>
           <div className="flex items-center gap-2">
             <button

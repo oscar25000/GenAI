@@ -177,7 +177,7 @@ export default function ExportSection({ project }) {
         <div className="text-[11px] uppercase tracking-widest text-slate-400 font-semibold mb-1.5">Sortir du dashboard</div>
         <h1 className="text-[28px] font-bold text-slate-900 leading-tight">Exporter ton plan</h1>
         <p className="mt-2 text-[14px] text-slate-500 leading-relaxed">
-          EpiPilot formate ton plan pour les outils que ton équipe utilise déjà.
+          Epilot formate ton plan pour les outils que ton équipe utilise déjà.
         </p>
       </div>
 
