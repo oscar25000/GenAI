@@ -2,7 +2,7 @@
 //
 // What it does:
 //  - Takes a base64-encoded PDF + team config + API key
-//  - Calls gpt-4o via the Responses API with the PDF as an input_file
+//  - Calls the configured OpenAI model via the Responses API with the PDF as an input_file
 //  - For one-shot analysis: constrains output via text.format = json_schema
 //  - For chat: uses function tools that mutate shared project state
 //
@@ -208,7 +208,7 @@ function extractOutputText(response) {
 
 export async function analyzePdfWithOpenAI({
   apiKey,
-  model = 'gpt-4o',
+  model = 'gpt-5.4-mini',
   pdfBase64,
   pdfFilename,
   team,
@@ -311,7 +311,7 @@ Réponds uniquement avec le JSON conforme au schéma. Pas de texte autour.`
 
 export async function chatTurn({
   apiKey,
-  model = 'gpt-4o',
+  model = 'gpt-5.4-mini',
   history,
   project,
   pdfBase64,

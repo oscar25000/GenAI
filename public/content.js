@@ -707,7 +707,7 @@
           <div class="epipilot-overlay-logo">${ICONS.sparkles}</div>
           <div>
             <h3>Analyse en cours</h3>
-            <p class="sub">EpiPilot · OpenAI GPT-4o</p>
+            <p class="sub">EpiPilot · OpenAI</p>
           </div>
           <button class="close" aria-label="Fermer">${ICONS.close}</button>
         </div>

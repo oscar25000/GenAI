@@ -379,10 +379,127 @@ function MessageBubble({ message }) {
             : 'bg-white shadow-sm text-slate-800',
         )}
       >
-        {text}
+        {isUser ? text : <MarkdownMessage text={text} />}
       </div>
     </div>
   )
+}
+
+function MarkdownMessage({ text }) {
+  const blocks = parseMarkdownBlocks(text)
+
+  return (
+    <div className="space-y-2">
+      {blocks.map((block, idx) => {
+        if (block.type === 'heading') {
+          return (
+            <div key={idx} className="font-bold text-slate-900 mt-1 first:mt-0">
+              {renderInlineMarkdown(block.text)}
+            </div>
+          )
+        }
+        if (block.type === 'list') {
+          return (
+            <ul key={idx} className="list-disc pl-5 space-y-1">
+              {block.items.map((item, itemIdx) => (
+                <li key={itemIdx}>{renderInlineMarkdown(item)}</li>
+              ))}
+            </ul>
+          )
+        }
+        return (
+          <p key={idx} className="m-0">
+            {renderInlineMarkdown(block.text)}
+          </p>
+        )
+      })}
+    </div>
+  )
+}
+
+function parseMarkdownBlocks(text) {
+  const blocks = []
+  let paragraph = []
+  let listItems = []
+
+  function flushParagraph() {
+    if (!paragraph.length) return
+    blocks.push({ type: 'paragraph', text: paragraph.join('\n') })
+    paragraph = []
+  }
+
+  function flushList() {
+    if (!listItems.length) return
+    blocks.push({ type: 'list', items: listItems })
+    listItems = []
+  }
+
+  for (const rawLine of text.split('\n')) {
+    const line = rawLine.trim()
+    if (!line) {
+      flushParagraph()
+      flushList()
+      continue
+    }
+
+    const heading = line.match(/^#{1,4}\s+(.+)$/)
+    if (heading) {
+      flushParagraph()
+      flushList()
+      blocks.push({ type: 'heading', text: heading[1] })
+      continue
+    }
+
+    const boldHeading = line.match(/^\*\*(.+?)\*\*:?\s*$/)
+    if (boldHeading) {
+      flushParagraph()
+      flushList()
+      blocks.push({ type: 'heading', text: boldHeading[1] })
+      continue
+    }
+
+    const listItem = line.match(/^[-*]\s+(.+)$/)
+    if (listItem) {
+      flushParagraph()
+      listItems.push(listItem[1])
+      continue
+    }
+
+    flushList()
+    paragraph.push(line)
+  }
+
+  flushParagraph()
+  flushList()
+  return blocks
+}
+
+function renderInlineMarkdown(text) {
+  const parts = []
+  const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g
+  let lastIndex = 0
+  let match
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index))
+    const token = match[0]
+    const key = `${match.index}-${token}`
+    if (token.startsWith('**')) {
+      parts.push(<strong key={key}>{token.slice(2, -2)}</strong>)
+    } else if (token.startsWith('*')) {
+      parts.push(<em key={key}>{token.slice(1, -1)}</em>)
+    } else {
+      parts.push(
+        <code key={key} className="rounded bg-slate-100 px-1 py-0.5 text-[12px] font-mono text-slate-700">
+          {token.slice(1, -1)}
+        </code>,
+      )
+    }
+    lastIndex = pattern.lastIndex
+  }
+
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex))
+  return parts
 }
 
 function TypingIndicator({ stage }) {

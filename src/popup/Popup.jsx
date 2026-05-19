@@ -82,6 +82,7 @@ export default function Popup() {
   const [currentStage, setCurrentStage] = useState(0)
   const [last, setLast] = useState(null)
   const [hasKey, setHasKey] = useState(false)
+  const [model, setModel] = useState('gpt-5.4-mini')
   const [errorMsg, setErrorMsg] = useState('')
   const [mode, setMode] = useState('mock')
   const fileInput = useRef(null)
@@ -89,6 +90,7 @@ export default function Popup() {
   useEffect(() => {
     getSettings().then((s) => {
       setHasKey(Boolean(s.apiKey))
+      setModel(s.model || 'gpt-5.4-mini')
       setLast(s.project)
     })
   }, [])
@@ -202,7 +204,7 @@ export default function Popup() {
         </div>
       </header>
 
-      <ModeBadge hasKey={hasKey} />
+      <ModeBadge hasKey={hasKey} model={model} />
 
       {/* Upload card */}
       <div className="bg-white rounded-2xl shadow-sm p-4">
@@ -329,7 +331,7 @@ export default function Popup() {
   )
 }
 
-function ModeBadge({ hasKey }) {
+function ModeBadge({ hasKey, model }) {
   return (
     <div
       className={`flex items-center gap-2 text-[10.5px] font-semibold px-3 py-1.5 rounded-full w-fit ${
@@ -339,7 +341,7 @@ function ModeBadge({ hasKey }) {
       }`}
     >
       <KeyRound className="w-3 h-3" />
-      {hasKey ? 'Mode IA · OpenAI GPT-4o' : 'Mode démo · données mock'}
+      {hasKey ? `Mode IA · OpenAI ${model}` : 'Mode démo · données mock'}
     </div>
   )
 }

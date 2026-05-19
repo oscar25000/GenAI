@@ -15,6 +15,8 @@ import {
 import { DEFAULT_TEAM, getSettings, saveSettings } from '../lib/storage.js'
 
 const MODELS = [
+  { id: 'gpt-5.5', label: 'GPT-5.5', desc: 'Le plus avancé pour les plans complexes' },
+  { id: 'gpt-5.4-mini', label: 'GPT-5.4 mini', desc: 'Rapide, économique et très solide' },
   { id: 'gpt-4o', label: 'GPT-4o', desc: 'Le plus capable (recommandé)' },
   { id: 'gpt-4o-mini', label: 'GPT-4o mini', desc: 'Bon ratio rapidité / intelligence' },
   { id: 'gpt-4.1', label: 'GPT-4.1', desc: 'Long contexte, raisonnement renforcé' },
@@ -24,7 +26,7 @@ const PRESET_COLORS = ['#4f46e5', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#
 
 export default function SettingsModal({ open, onClose, onSaved }) {
   const [apiKey, setApiKey] = useState('')
-  const [model, setModel] = useState('gpt-4o')
+  const [model, setModel] = useState('gpt-5.4-mini')
   const [enableThinking, setEnableThinking] = useState(false)
   const [team, setTeam] = useState(DEFAULT_TEAM)
   const [showKey, setShowKey] = useState(false)
@@ -34,7 +36,7 @@ export default function SettingsModal({ open, onClose, onSaved }) {
     if (!open) return
     getSettings().then((s) => {
       setApiKey(s.apiKey || '')
-      setModel(s.model || 'gpt-4o')
+      setModel(s.model || 'gpt-5.4-mini')
       setEnableThinking(Boolean(s.enableThinking))
       setTeam(s.team?.length ? s.team : DEFAULT_TEAM)
     })
@@ -131,7 +133,7 @@ export default function SettingsModal({ open, onClose, onSaved }) {
 
           <section>
             <SectionTitle icon={Cpu} title="Modèle OpenAI" />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-2 mt-3">
               {MODELS.map((m) => (
                 <button
                   key={m.id}

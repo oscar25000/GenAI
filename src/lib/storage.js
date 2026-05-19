@@ -18,7 +18,7 @@ const DEFAULT_TEAM = [
 ]
 
 const DEFAULTS = {
-  [KEYS.model]: 'gpt-4o',
+  [KEYS.model]: 'gpt-5.4-mini',
   [KEYS.team]: DEFAULT_TEAM,
   [KEYS.enableThinking]: false,
 }
