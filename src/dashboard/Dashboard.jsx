@@ -12,6 +12,7 @@ import RisksSection from '../components/RisksSection.jsx'
 import ChecklistSection from '../components/ChecklistSection.jsx'
 import ExportSection from '../components/ExportSection.jsx'
 import SettingsModal from '../components/SettingsModal.jsx'
+import ConversationSection from '../components/ConversationSection.jsx'
 
 function loadProject() {
   if (typeof chrome !== 'undefined' && chrome.storage?.local) {
@@ -43,6 +44,9 @@ export default function Dashboard() {
     if (window.location.hash === '#settings') {
       setSettingsOpen(true)
       window.history.replaceState(null, '', window.location.pathname)
+    } else if (window.location.hash === '#conversation') {
+      setSection('conversation')
+      window.history.replaceState(null, '', window.location.pathname)
     }
   }, [])
 
@@ -51,6 +55,11 @@ export default function Dashboard() {
     const handler = (msg) => {
       if (msg?.type === 'epipilot:done' && msg.project) {
         setProject(msg.project)
+      } else if (msg?.type === 'epipilot:conv-tool' && msg.project) {
+        // Conversation incrementally updates the project state.
+        setProject(msg.project)
+      } else if (msg?.type === 'epipilot:conv-update' && msg.conversation?.project) {
+        setProject(msg.conversation.project)
       }
     }
     chrome.runtime.onMessage.addListener(handler)
@@ -114,6 +123,11 @@ export default function Dashboard() {
               />
             )}
             {section === 'export' && <ExportSection project={project} />}
+            {section === 'conversation' && (
+              <ConversationSection
+                onOpenFullDashboard={() => setSection('overview')}
+              />
+            )}
           </div>
         </div>
       </main>

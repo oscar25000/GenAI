@@ -52,6 +52,61 @@
 .epipilot-btn[disabled] { opacity: 0.6; cursor: not-allowed; }
 .epipilot-btn svg { width: 10px; height: 10px; }
 
+.epipilot-detail-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  margin: 14px 0;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+  color: white;
+  background: linear-gradient(135deg, #8257FF 0%, #5429D6 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 6px 24px -6px rgba(130, 87, 255, 0.55);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.epipilot-detail-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px -6px rgba(130, 87, 255, 0.7);
+}
+.epipilot-detail-btn svg { width: 13px; height: 13px; }
+
+.epipilot-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2147483645;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+  color: white;
+  background: linear-gradient(135deg, #8257FF 0%, #5429D6 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 14px 40px -10px rgba(130, 87, 255, 0.65), 0 0 0 1px rgba(130, 87, 255, 0.25);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  animation: epipilot-fade-in 250ms ease-out;
+}
+.epipilot-fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 44px -10px rgba(130, 87, 255, 0.8);
+}
+.epipilot-fab svg { width: 14px; height: 14px; }
+.epipilot-fab .status {
+  font-size: 10.5px;
+  opacity: 0.7;
+  font-weight: 400;
+}
+
 .epipilot-toast {
   position: fixed;
   bottom: 24px;
@@ -341,15 +396,203 @@
     return 'Projet Epitech'
   }
 
-  function findPdfUrl(card) {
-    // Look for a direct PDF link inside the card.
-    const link =
-      card.querySelector(
-        'a[href$=".pdf"], a[href*=".pdf?"], a[href*=".pdf#"]',
-      ) ||
-      card.querySelector('a[href*="subject"], a[href*="sujet"]')
-    if (link?.href) return link.href
+  // Ask the background SW for any PDF URL it captured on this tab via
+  // chrome.webRequest. This is the reliable fallback when the page uses a
+  // custom PDF viewer that doesn't expose URLs in the DOM.
+  function findPdfUrlFromNetwork() {
+    return new Promise((resolve) => {
+      try {
+        chrome.runtime.sendMessage({ type: 'epipilot:find-pdf' }, (res) => {
+          resolve(res?.pdfUrl || null)
+        })
+      } catch {
+        resolve(null)
+      }
+    })
+  }
+
+  async function resolvePdfUrl(root) {
+    // On the detail page we accept the aggressive scanner.
+    const inDom = findPdfUrlAggressive(root)
+    if (inDom) return inDom
+    const fromNet = await findPdfUrlFromNetwork()
+    return fromNet
+  }
+
+  // ─────────────────────────── Mantine tree node lazy reveal ───────────
+  // my.epitech.eu shows PDFs as treeitems with [data-value="*.pdf"] and the
+  // actual presigned URL is fetched lazily on click. We simulate the click,
+  // then poll the webRequest cache for the URL the browser just fetched.
+
+  function findPdfTreeNode(root) {
+    const all = Array.from(
+      root.querySelectorAll(
+        '[data-value$=".pdf" i], [data-file$=".pdf" i], [data-name$=".pdf" i]',
+      ),
+    )
+    if (all.length === 0) return null
+    // Prefer the file most likely to be the subject.
+    const preferred = all.find((c) => {
+      const v = (
+        c.getAttribute('data-value') ||
+        c.getAttribute('data-file') ||
+        c.getAttribute('data-name') ||
+        ''
+      ).toLowerCase()
+      return /project|subject|sujet/.test(v)
+    })
+    return preferred || all[0]
+  }
+
+  function findClickable(el) {
+    let cur = el
+    for (let i = 0; cur && i < 6; i++) {
+      if (
+        cur.matches?.(
+          '[role="treeitem"], [role="button"], button, a, [tabindex]:not([tabindex="-1"])',
+        )
+      ) {
+        return cur
+      }
+      cur = cur.parentElement
+    }
+    return el
+  }
+
+  async function revealPdfThroughClick(root) {
+    const node = findPdfTreeNode(root)
+    if (!node) return null
+    const clickable = findClickable(node)
+    try {
+      clickable.click()
+    } catch {
+      return null
+    }
+    // Poll the background's webRequest cache (~5s max).
+    for (let i = 0; i < 25; i++) {
+      await new Promise((r) => setTimeout(r, 200))
+      const url = await findPdfUrlFromNetwork()
+      if (url) return url
+    }
     return null
+  }
+
+  // Full resolution pipeline used both by the FAB and the auto-trigger.
+  async function obtainPdfUrl({ allowClick = true } = {}) {
+    let url = findPdfUrlAggressive(document.body)
+    if (url) return url
+    url = await findPdfUrlFromNetwork()
+    if (url) return url
+    if (allowClick) {
+      url = await revealPdfThroughClick(document.body)
+      if (url) return url
+    }
+    return null
+  }
+
+  // Conservative — only matches things that ARE PDFs. Used on listing cards
+  // to avoid false positives that would kick off a doomed analyze flow.
+  function findPdfUrl(root) {
+    // 1) Direct PDF anchor (must end in .pdf).
+    let el = root.querySelector(
+      'a[href$=".pdf"], a[href*=".pdf?"], a[href*=".pdf#"]',
+    )
+    if (el?.href) return el.href
+
+    // 2) PDF viewers (iframe/embed/object).
+    el =
+      root.querySelector('iframe[src$=".pdf"], iframe[src*=".pdf?"], iframe[src*=".pdf#"]') ||
+      root.querySelector('embed[src*=".pdf"], embed[type*="pdf" i]') ||
+      root.querySelector('object[data*=".pdf"], object[type*="pdf" i]')
+    if (el) {
+      const v = el.src || el.data
+      if (v) return new URL(v, window.location.origin).href
+    }
+
+    // 3) Data attributes ending in .pdf.
+    const anyAnchor = root.querySelector(
+      'a[data-href*=".pdf" i], a[data-url*=".pdf" i], a[data-file*=".pdf" i]',
+    )
+    if (anyAnchor) {
+      const v =
+        anyAnchor.getAttribute('data-href') ||
+        anyAnchor.getAttribute('data-url') ||
+        anyAnchor.getAttribute('data-file')
+      if (v) return new URL(v, window.location.origin).href
+    }
+    return null
+  }
+
+  // Aggressive — adds an HTML scan for presigned S3 URLs / encoded URLs.
+  // Used only on the detail page where false positives are acceptable
+  // (we already know the user wants to analyze THIS project's PDF).
+  function findPdfUrlAggressive(root) {
+    const cheap = findPdfUrl(root)
+    if (cheap) return cheap
+
+    // Any anchor with .pdf in href.
+    for (const a of root.querySelectorAll('a[href]')) {
+      const href = a.getAttribute('href') || ''
+      if (/\.pdf(?:[?#]|$)/i.test(href)) {
+        return new URL(href, window.location.origin).href
+      }
+    }
+    return scanHtmlForPdfUrl(root.outerHTML || root.innerHTML || '')
+  }
+
+  function scanHtmlForPdfUrl(html) {
+    if (!html) return null
+    const decoded = html
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#x27;/g, "'")
+    const patterns = [
+      // Direct PDF link
+      /https?:\/\/[^\s"'<>\\]+\.pdf(?:\?[^\s"'<>\\]*)?/i,
+      // Presigned S3 (any cloud) ending in pdf within filename param
+      /https?:\/\/[^\s"'<>\\]+filename%3D[^\s"'<>\\]*\.pdf[^\s"'<>\\]*/i,
+      // Generic presigned with .pdf somewhere in the path
+      /https?:\/\/[^\s"'<>\\]+\/[^\s"'<>\\]*\.pdf[^\s"'<>\\]*/i,
+    ]
+    for (const re of patterns) {
+      const m = decoded.match(re)
+      if (m) return m[0]
+    }
+    return null
+  }
+
+  // Returns a URL to the project detail page if the card contains one.
+  // Used as fallback when no direct PDF is on the listing card — we navigate
+  // there with ?epipilot=auto to continue the analysis from the detail page.
+  function findProjectUrl(card) {
+    // Prefer a link that clearly looks like a project route.
+    const candidates = card.querySelectorAll('a[href]')
+    let best = null
+    for (const a of candidates) {
+      const href = a.href || ''
+      if (/\/project[s]?\/[^?#]+/.test(href)) return href
+      if (/\/project[s]?\b/.test(href) && !best) best = href
+      if (/\/module\/.*\/project/i.test(href)) return href
+    }
+    // If the card itself is an <a>, use it.
+    if (card.tagName === 'A' && card.href && /project/i.test(card.href)) {
+      return card.href
+    }
+    return best
+  }
+
+  // Is the current page a project detail page (vs the listing)?
+  function isDetailPage() {
+    const p = window.location.pathname
+    // Heuristic: a path with /project/<something> beyond the listing root.
+    if (/\/projects?\/[^/?#]+/.test(p)) return true
+    if (/\/module\/.*\/project/i.test(p)) return true
+    return false
+  }
+
+  function isListingPage() {
+    const p = window.location.pathname
+    return /\/projects?\/?$/.test(p) || /\/projects\?/.test(window.location.href)
   }
 
   // ─────────────────────────────────────────────── button injection ─────
@@ -527,26 +770,63 @@
   // ──────────────────────────────────────────────── analyze click flow ──
   async function handleAnalyzeClick(card) {
     const name = extractProjectName(card)
-    openOverlay(name)
-
     const pdfUrl = findPdfUrl(card)
-    if (!pdfUrl) {
-      showOverlayError(
-        "Aucun PDF de sujet trouvé sur cette carte. Ouvre le projet, puis clique sur le PDF depuis la page suivante (un futur update permettra l'analyse depuis la liste directement).",
-      )
+
+    if (pdfUrl) {
+      // Direct PDF on the card — start session right away.
+      showToast('Ouverture du dashboard…')
+      try {
+        await chrome.runtime.sendMessage({
+          type: 'epipilot:start-session',
+          pdfUrl,
+          projectName: name,
+        })
+      } catch {
+        openOverlay(name)
+        showOverlayError(
+          "Le service worker ne répond pas. Recharge l'extension dans chrome://extensions.",
+        )
+      }
       return
     }
 
-    setStep(0)
+    // No PDF on the listing card. my.epitech.eu's cards usually have no real
+    // <a href> — the SPA uses onClick handlers. We stash a "pending" flag in
+    // chrome.storage, then either follow an explicit URL or programmatically
+    // click the card to let the SPA navigate. The detail-page content
+    // script reads the flag and auto-triggers the analysis.
     try {
-      await chrome.runtime.sendMessage({
-        type: 'epipilot:analyze-url',
-        pdfUrl,
-        projectName: name,
+      await chrome.storage.local.set({
+        epipilot_pending: {
+          projectName: name,
+          timestamp: Date.now(),
+        },
       })
-    } catch (err) {
+    } catch {
+      /* storage unavailable — best effort */
+    }
+
+    const projectUrl = findProjectUrl(card)
+    if (projectUrl) {
+      showToast('Ouverture du projet…')
+      try {
+        window.location.href = new URL(projectUrl, window.location.origin).href
+      } catch {
+        window.location.href = projectUrl
+      }
+      return
+    }
+
+    // No href — simulate a click on the card so the SPA navigates itself.
+    showToast('Ouverture du projet…')
+    const clickable =
+      card.querySelector('a, button, [role="button"], [data-testid]') || card
+    try {
+      clickable.click()
+    } catch {
+      openOverlay(name)
       showOverlayError(
-        'Le service worker ne répond pas. Recharge l\'extension dans chrome://extensions, puis recommence.',
+        "Impossible d'ouvrir la page du projet. Clique sur la carte manuellement, le bouton EpiPilot s'affichera ensuite.",
       )
     }
   }
@@ -588,15 +868,195 @@
     return code
   }
 
+  // ────────────────────────────────────── detail page support ──────────
+  let detailBtnInjected = false
+  let autoTriggered = false
+  let fabEl = null
+
+  function ensureFab() {
+    if (fabEl && document.body.contains(fabEl)) return fabEl
+    fabEl = document.createElement('button')
+    fabEl.type = 'button'
+    fabEl.className = 'epipilot-fab'
+    fabEl.innerHTML = `${ICONS.sparkles}<span>Analyser avec EpiPilot</span><span class="status">recherche du PDF…</span>`
+    fabEl.addEventListener('click', async () => {
+      updateFabStatus('Recherche du PDF…')
+      const pdfUrl = await obtainPdfUrl({ allowClick: true })
+      if (pdfUrl) {
+        triggerDetailAnalysis(pdfUrl)
+      } else {
+        showToast('Aucun PDF détecté.')
+        updateFabStatus('PDF introuvable')
+      }
+    })
+    document.body.appendChild(fabEl)
+    return fabEl
+  }
+
+  function updateFabStatus(text) {
+    if (!fabEl) return
+    const status = fabEl.querySelector('.status')
+    if (!status) return
+    if (typeof text === 'boolean') {
+      status.textContent = text ? 'PDF détecté' : 'recherche du PDF…'
+    } else {
+      status.textContent = text
+    }
+  }
+
+  function removeFab() {
+    if (fabEl && fabEl.parentElement) fabEl.parentElement.removeChild(fabEl)
+    fabEl = null
+  }
+
+  function extractProjectNameFromDetail() {
+    const fromUrl = new URLSearchParams(window.location.search).get(
+      'epipilot_name',
+    )
+    if (fromUrl) return fromUrl
+    const title =
+      document.querySelector('h1, h2, [class*="title" i]')?.textContent
+    return title?.trim().slice(0, 100) || 'Projet Epitech'
+  }
+
+  function ensureDetailButton(pdfUrl) {
+    if (detailBtnInjected) return
+    // Find a sensible anchor : the PDF link itself, or the page header.
+    const pdfLink =
+      document.querySelector(
+        'a[href$=".pdf"], a[href*=".pdf?"], a[href*=".pdf#"]',
+      ) || document.querySelector('iframe[src*=".pdf"]')
+    const anchor =
+      pdfLink?.parentElement ||
+      document.querySelector('h1, h2, [class*="title" i]') ||
+      document.body
+    if (!anchor) return
+
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'epipilot-detail-btn'
+    btn.innerHTML = `${ICONS.sparkles}<span>Analyser ce projet avec EpiPilot</span>`
+    btn.title = 'Analyser ce projet avec EpiPilot'
+    btn.addEventListener('click', () => triggerDetailAnalysis(pdfUrl))
+    // Insert right after the anchor element.
+    anchor.parentElement?.insertBefore(btn, anchor.nextSibling)
+    detailBtnInjected = true
+    showToast('Projet détecté — clique sur Analyser ou attends l\'auto-lancement')
+  }
+
+  async function triggerDetailAnalysis(pdfUrl, providedName) {
+    const name = providedName || extractProjectNameFromDetail()
+    showToast('Ouverture du dashboard…')
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'epipilot:start-session',
+        pdfUrl,
+        projectName: name,
+      })
+    } catch {
+      openOverlay(name)
+      showOverlayError(
+        "Le service worker ne répond pas. Recharge l'extension.",
+      )
+    }
+  }
+
+  async function refreshDetailPage() {
+    ensureFab()
+
+    // Quick non-clicking detection for the FAB status.
+    const quickUrl = await obtainPdfUrl({ allowClick: false })
+    updateFabStatus(Boolean(quickUrl))
+    if (quickUrl) {
+      ensureDetailButton(quickUrl)
+    }
+
+    if (autoTriggered) return Boolean(quickUrl)
+
+    // URL-param trigger (legacy).
+    const autoParam = new URLSearchParams(window.location.search).get('epipilot')
+    if (autoParam === 'auto') {
+      autoTriggered = true
+      const u = new URL(window.location.href)
+      u.searchParams.delete('epipilot')
+      u.searchParams.delete('epipilot_name')
+      window.history.replaceState({}, '', u.href)
+      ;(async () => {
+        const url = quickUrl || (await obtainPdfUrl({ allowClick: true }))
+        if (url) triggerDetailAnalysis(url)
+        else updateFabStatus('PDF introuvable')
+      })()
+      return true
+    }
+
+    // chrome.storage trigger from the listing page.
+    try {
+      chrome.storage.local.get(['epipilot_pending'], async (res) => {
+        const p = res?.epipilot_pending
+        if (!p || autoTriggered) return
+        const isFresh = Date.now() - (p.timestamp || 0) < 5 * 60_000
+        if (!isFresh) {
+          chrome.storage.local.remove(['epipilot_pending'])
+          return
+        }
+        autoTriggered = true
+        chrome.storage.local.remove(['epipilot_pending'])
+        updateFabStatus('Récupération du PDF…')
+        showToast('Récupération du PDF…')
+        const url = quickUrl || (await obtainPdfUrl({ allowClick: true }))
+        if (url) {
+          triggerDetailAnalysis(url, p.projectName)
+        } else {
+          updateFabStatus('PDF introuvable')
+          showToast('Impossible de récupérer le PDF — clique sur le treeitem manuellement.')
+        }
+      })
+    } catch {
+      /* ignore */
+    }
+
+    return Boolean(quickUrl)
+  }
+
   // ──────────────────────────────────────── DOM ready + SPA observer ──
   function init() {
-    refreshButtons()
+    if (isDetailPage()) {
+      refreshDetailPage()
+    } else {
+      refreshButtons()
+    }
+
     const observer = new MutationObserver(
       debounce(() => {
-        refreshButtons()
+        if (isDetailPage()) {
+          refreshDetailPage()
+        } else {
+          // Reset detail-page state if we navigated back to listing.
+          detailBtnInjected = false
+          autoTriggered = false
+          removeFab()
+          refreshButtons()
+        }
       }, 250),
     )
     observer.observe(document.body, { childList: true, subtree: true })
+
+    // Also watch SPA history navigation.
+    let lastPath = window.location.pathname + window.location.search
+    setInterval(() => {
+      const now = window.location.pathname + window.location.search
+      if (now !== lastPath) {
+        lastPath = now
+        detailBtnInjected = false
+        autoTriggered = false
+        if (isDetailPage()) {
+          refreshDetailPage()
+        } else {
+          removeFab()
+          refreshButtons()
+        }
+      }
+    }, 500)
   }
 
   function debounce(fn, ms) {

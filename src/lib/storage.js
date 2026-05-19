@@ -7,6 +7,7 @@ const KEYS = {
   team: 'epipilot.team',
   project: 'epipilot_project',
   enableThinking: 'epipilot.enableThinking',
+  conversation: 'epipilot.conversation',
 }
 
 const DEFAULT_TEAM = [
@@ -79,6 +80,48 @@ export async function saveProject(project) {
   }
   try {
     localStorage.setItem(KEYS.project, JSON.stringify(project))
+  } catch {}
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Conversation state — { messages, project, pdfBase64, projectName, status }
+// status: 'pending' | 'thinking' | 'idle' | 'done' | 'error'
+
+export async function getConversation() {
+  if (hasChromeStorage()) {
+    return new Promise((resolve) => {
+      chrome.storage.local.get([KEYS.conversation], (res) => {
+        resolve(res[KEYS.conversation] || null)
+      })
+    })
+  }
+  try {
+    const raw = localStorage.getItem(KEYS.conversation)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+export async function saveConversation(conv) {
+  if (hasChromeStorage()) {
+    return new Promise((resolve) =>
+      chrome.storage.local.set({ [KEYS.conversation]: conv }, resolve),
+    )
+  }
+  try {
+    localStorage.setItem(KEYS.conversation, JSON.stringify(conv))
+  } catch {}
+}
+
+export async function clearConversation() {
+  if (hasChromeStorage()) {
+    return new Promise((resolve) =>
+      chrome.storage.local.remove([KEYS.conversation], resolve),
+    )
+  }
+  try {
+    localStorage.removeItem(KEYS.conversation)
   } catch {}
 }
 

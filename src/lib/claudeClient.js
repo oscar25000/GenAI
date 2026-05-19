@@ -11,6 +11,7 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import { projectSchema } from './projectSchema.js'
+import { projectTools, applyToolUse } from './projectTools.js'
 
 const SYSTEM_PROMPT = `Tu es EpiPilot, un copilote IA spécialisé dans l'analyse des sujets de projets Epitech (l'école d'ingénieurs).
 
@@ -197,5 +198,174 @@ Réponds uniquement avec le JSON conforme au schéma. Pas de texte autour.`,
   return {
     project,
     usage: response.usage,
+  }
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Guided conversation — multi-turn chat with tools.
+//
+// The agent reads the PDF, then asks the user questions step by step.
+// Each tool call mutates the shared project state. The background SW owns
+// that state, persists it, and broadcasts updates to the dashboard.
+
+const CHAT_SYSTEM_PROMPT = `Tu es EpiPilot, copilote IA pour les étudiants Epitech. Ton rôle est d'accompagner une équipe d'étudiants pour transformer un sujet de projet (PDF) en plan de projet complet et exécutable.
+
+Tu mènes une conversation **structurée** en phases. Tu poses **une seule question à la fois**. Tes messages sont **courts** (2 à 4 phrases max), directs, en français, pro mais chaleureux. Pas d'émojis. Tutoie l'utilisateur.
+
+# Phases de la conversation
+
+**Phase 1 — Compréhension du sujet** (premier message)
+- Tu as déjà lu le PDF. Appelle immédiatement \`set_summary\` pour enregistrer ton résumé (nom du projet, objectif, ce qu'il faut construire, contraintes, livrables).
+- Présente le résumé en 3-4 lignes à l'utilisateur.
+- Demande : « Est-ce que ce résumé correspond à ce que vous avez compris du sujet ? »
+
+**Phase 2 — Équipe**
+- Demande : « Qui est dans ton équipe ? Donne-moi les prénoms et les compétences de chacun (frontend, backend, design, devops…). »
+- Quand tu as l'info, appelle \`set_team\` avec tous les membres.
+
+**Phase 3 — Ambition et stack technique**
+- Demande l'ambition : MVP minimal, version solide, ou très ambitieuse ?
+- Demande la stack envisagée (langage backend, framework frontend, base de données, mobile si pertinent).
+- Si la stack ne respecte pas une contrainte du sujet, signale-le.
+
+**Phase 4 — Contraintes & disponibilité**
+- Combien d'heures par semaine l'équipe peut consacrer ?
+- Y a-t-il des contraintes externes (autres rendus, partiels, déplacements) ?
+
+**Phase 5 — Génération du plan complet** (sans poser de question)
+- Appelle dans l'ordre : \`set_warnings\`, \`set_tasks\` (15-25 tâches avec assignation selon les compétences), \`set_planning\` (4-6 sprints), \`set_risks\` (5-7), \`set_checklist\` (10-15), \`update_meta\` (difficulty, riskScore, deadline, durationDays, estimatedHours).
+- Annonce que le plan est prêt et invite à ouvrir le dashboard complet.
+
+**Phase 6 — Itération (optionnelle)**
+- Si l'utilisateur veut ajuster (équipe, deadline, ajouter/retirer une tâche), appelle les outils pertinents pour mettre à jour.
+
+# Règles
+
+- Appelle les outils dès que tu collectes une information exploitable. N'attends pas la fin pour tout faire d'un coup (sauf pour la phase 5 où tout est généré en cascade).
+- Ne ré-explique pas ce que les outils font à l'utilisateur. Ils sont silencieux côté utilisateur.
+- Si l'utilisateur t'envoie quelque chose en dehors des phases (ex: une question technique), réponds brièvement puis recadre.
+- Évite les listes à puces dans tes messages de chat — sauf pour le résumé initial. Garde un ton conversationnel.
+- Pour set_tasks : chaque tâche doit avoir un assigneeName qui matche exactement un name de l'équipe enregistrée via set_team.
+- Pour set_planning : utilise les title exacts des tasks dans taskTitles.`
+
+const MAX_TURNS = 8 // safety cap for the agentic loop
+
+export async function chatTurn({
+  apiKey,
+  model = 'claude-opus-4-7',
+  enableThinking = false,
+  history, // array of { role, content } messages
+  project, // current partial project state
+  pdfBase64, // included only on the very first turn (in the first user message)
+  onToolApplied, // (toolName, project) => void
+  onProgress, // (stage) => void
+}) {
+  if (!apiKey) throw new Error('API_KEY_MISSING')
+
+  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
+
+  // Build messages array. If history has a pending PDF on the first user
+  // message, inject it as a document content block.
+  let messages = history.map((m) => ({
+    role: m.role,
+    content: m.content,
+  }))
+
+  if (pdfBase64 && messages.length === 1 && messages[0].role === 'user') {
+    const text =
+      typeof messages[0].content === 'string'
+        ? messages[0].content
+        : messages[0].content.find((b) => b.type === 'text')?.text || ''
+    messages[0].content = [
+      {
+        type: 'document',
+        source: { type: 'base64', media_type: 'application/pdf', data: pdfBase64 },
+      },
+      { type: 'text', text },
+    ]
+  }
+
+  let workingProject = project
+  let collectedText = ''
+  let lastUsage = null
+
+  for (let turn = 0; turn < MAX_TURNS; turn++) {
+    onProgress?.(turn === 0 ? 'EpiPilot réfléchit…' : 'Application des changements…')
+
+    const request = {
+      model,
+      max_tokens: 8000,
+      system: [
+        {
+          type: 'text',
+          text: CHAT_SYSTEM_PROMPT,
+          cache_control: { type: 'ephemeral' },
+        },
+      ],
+      tools: projectTools,
+      messages,
+    }
+    if (enableThinking) request.thinking = { type: 'adaptive' }
+
+    let response
+    try {
+      response = await client.messages.create(request)
+    } catch (err) {
+      if (err instanceof Anthropic.AuthenticationError) throw new Error('API_KEY_INVALID')
+      if (err instanceof Anthropic.RateLimitError) throw new Error('RATE_LIMITED')
+      if (err instanceof Anthropic.BadRequestError) throw new Error(`BAD_REQUEST: ${err.message}`)
+      throw err
+    }
+    lastUsage = response.usage
+
+    // Collect assistant text from this turn.
+    const textBlocks = response.content.filter((b) => b.type === 'text')
+    for (const t of textBlocks) {
+      collectedText += (collectedText ? '\n\n' : '') + t.text
+    }
+
+    // Append assistant turn verbatim (preserve tool_use blocks).
+    messages.push({ role: 'assistant', content: response.content })
+
+    if (response.stop_reason !== 'tool_use') {
+      // Done — return the assistant text and the updated project.
+      return {
+        assistantText: collectedText,
+        project: workingProject,
+        usage: lastUsage,
+      }
+    }
+
+    // Execute every tool_use block in this assistant turn.
+    const toolUses = response.content.filter((b) => b.type === 'tool_use')
+    const toolResults = []
+    for (const tu of toolUses) {
+      try {
+        const { project: nextProject, message } = applyToolUse(workingProject, tu)
+        workingProject = nextProject
+        onToolApplied?.(tu.name, workingProject)
+        toolResults.push({
+          type: 'tool_result',
+          tool_use_id: tu.id,
+          content: message,
+        })
+      } catch (err) {
+        toolResults.push({
+          type: 'tool_result',
+          tool_use_id: tu.id,
+          content: `Erreur : ${err.message}`,
+          is_error: true,
+        })
+      }
+    }
+
+    messages.push({ role: 'user', content: toolResults })
+  }
+
+  // Hit safety cap — return whatever we have.
+  return {
+    assistantText: collectedText || "(boucle d'outils interrompue — relance la conversation)",
+    project: workingProject,
+    usage: lastUsage,
   }
 }

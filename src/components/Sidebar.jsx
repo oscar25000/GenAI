@@ -9,10 +9,12 @@ import {
   ShieldAlert,
   CheckCircle2,
   Share2,
+  MessageCircle,
 } from 'lucide-react'
 import clsx from 'clsx'
 
 const ITEMS = [
+  { id: 'conversation', label: 'Conversation', icon: MessageCircle },
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'summary', label: 'Résumé', icon: BookOpen },
   { id: 'warnings', label: 'À ne pas oublier', icon: AlertTriangle },

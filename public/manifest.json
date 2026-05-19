@@ -12,12 +12,18 @@
     "service_worker": "background.js",
     "type": "module"
   },
-  "permissions": ["storage", "tabs", "cookies"],
+  "permissions": ["storage", "tabs", "cookies", "webRequest"],
   "host_permissions": [
     "https://intra.epitech.eu/*",
     "https://my.epitech.eu/*",
     "https://*.epitech.eu/*",
-    "https://api.anthropic.com/*"
+    "https://api.anthropic.com/*",
+    "https://*.cloud.ovh.net/*",
+    "https://*.amazonaws.com/*",
+    "https://*.googleusercontent.com/*",
+    "https://*.cloudfront.net/*",
+    "https://*.azureedge.net/*",
+    "https://*.blob.core.windows.net/*"
   ],
   "content_scripts": [
     {

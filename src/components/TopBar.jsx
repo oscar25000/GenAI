@@ -1,6 +1,7 @@
 import { Search, Command, Bell, RefreshCw, FileText, Settings } from 'lucide-react'
 
 const SECTION_TITLES = {
+  conversation: 'Conversation guidée',
   overview: 'Vue d\'ensemble',
   summary: 'Résumé du projet',
   warnings: 'À ne pas oublier',
