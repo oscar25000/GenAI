@@ -1,13 +1,5 @@
-import {
-  Clock,
-  Gauge as GaugeIcon,
-  ShieldAlert,
-  CalendarDays,
-  ArrowRight,
-  Target,
-  Sparkles,
-} from 'lucide-react'
-import { Card, Gauge, Pill, ProgressBar, SectionHeader } from './ui.jsx'
+import { ArrowRight, Sparkles } from 'lucide-react'
+import { ProgressBar, Pill } from './ui.jsx'
 
 function daysUntil(iso) {
   const ms = new Date(iso).getTime() - Date.now()
@@ -17,208 +9,132 @@ function daysUntil(iso) {
 export default function OverviewSection({ project, team, onJump }) {
   const remaining = daysUntil(project.deadline)
   const tasksDone = project.tasks.filter((t) => t.status === 'done').length
-  const tasksInProgress = project.tasks.filter(
-    (t) => t.status === 'in_progress',
-  ).length
+  const tasksInProgress = project.tasks.filter((t) => t.status === 'in_progress').length
+  const deadline = new Date(project.deadline).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
 
   return (
-    <div className="space-y-8">
-      {/* Hero */}
-      <div className="relative overflow-hidden rounded-3xl glass-strong p-8">
-        <div className="absolute inset-0 pointer-events-none opacity-60">
-          <div className="absolute -top-24 -right-24 w-[420px] h-[420px] rounded-full bg-violet-600/20 blur-3xl" />
-          <div className="absolute -bottom-24 -left-24 w-[360px] h-[360px] rounded-full bg-violet-400/10 blur-3xl" />
+    <div>
+      {/* Title */}
+      <div className="mb-10">
+        <div className="flex items-center gap-2 mb-3">
+          <Pill tone="violet"><Sparkles className="w-3 h-3" /> Analyse IA terminée</Pill>
         </div>
-        <div className="relative">
-          <div className="flex items-center gap-2 mb-3">
-            <Pill tone="violet">
-              <Sparkles className="w-3 h-3" /> Analyse IA terminée
-            </Pill>
-            <Pill tone="default">PDF · {project.sourcePdf}</Pill>
-          </div>
-          <h1 className="text-[34px] font-semibold tracking-tight leading-tight">
-            {project.name}
-            <span className="ml-3 gradient-text">
-              prêt à être exécuté
-            </span>
-          </h1>
-          <p className="mt-2 text-[14px] text-violet-200/70 max-w-2xl">
-            {project.summary.goal}
-          </p>
-
-          <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl">
-            <HeroStat
-              icon={<GaugeIcon className="w-3.5 h-3.5" />}
-              label="Difficulté"
-              value={`${project.difficulty}/10`}
-            />
-            <HeroStat
-              icon={<ShieldAlert className="w-3.5 h-3.5" />}
-              label="Risque"
-              value={`${project.riskScore}/100`}
-            />
-            <HeroStat
-              icon={<Clock className="w-3.5 h-3.5" />}
-              label="Temps estimé"
-              value={`${project.estimatedHours} h`}
-            />
-            <HeroStat
-              icon={<CalendarDays className="w-3.5 h-3.5" />}
-              label="Jours restants"
-              value={`${remaining} j`}
-            />
-          </div>
-
-          <div className="mt-6 flex flex-wrap gap-2">
-            <button
-              onClick={() => onJump('tasks')}
-              className="px-4 py-2 rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 text-sm font-medium shadow-glow hover:from-violet-400 hover:to-violet-600 transition flex items-center gap-2"
-            >
-              Voir les tâches <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => onJump('planning')}
-              className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/[0.09] border border-white/10 text-sm transition"
-            >
-              Ouvrir le planning
-            </button>
-            <button
-              onClick={() => onJump('warnings')}
-              className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/[0.09] border border-white/10 text-sm transition"
-            >
-              À ne pas oublier
-            </button>
-          </div>
-        </div>
+        <h1 className="text-[32px] font-bold text-slate-900 leading-tight tracking-tight">{project.name}</h1>
+        <p className="mt-2 text-[15px] text-slate-500 max-w-2xl leading-relaxed">{project.summary.goal}</p>
       </div>
 
-      {/* Gauges + progress */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <Card className="p-6 flex items-center gap-6">
-          <Gauge value={project.difficulty * 10} label="Difficulté" />
-          <div>
-            <div className="text-[11px] uppercase tracking-wider text-violet-300/60">
-              Difficulté projet
-            </div>
-            <div className="text-[15px] font-medium mt-1">
-              Projet ambitieux mais réalisable
-            </div>
-            <p className="text-[12px] text-violet-200/60 mt-1 max-w-[260px]">
-              Complexité tirée par le moteur AREA et le client mobile.
-            </p>
-          </div>
-        </Card>
-        <Card className="p-6 flex items-center gap-6">
-          <Gauge value={project.riskScore} label="Risque" color="#F59E0B" />
-          <div>
-            <div className="text-[11px] uppercase tracking-wider text-violet-300/60">
-              Score de risque
-            </div>
-            <div className="text-[15px] font-medium mt-1">
-              À surveiller cette semaine
-            </div>
-            <p className="text-[12px] text-violet-200/60 mt-1 max-w-[260px]">
-              Mobile sous-estimé, dépendance backend. Voir l'onglet Risques.
-            </p>
-          </div>
-        </Card>
-        <Card className="p-6">
-          <div className="text-[11px] uppercase tracking-wider text-violet-300/60">
-            Progression globale
-          </div>
-          <div className="mt-1 text-[28px] font-semibold tracking-tight">
-            {project.progress}%
-          </div>
-          <ProgressBar value={project.progress} />
-          <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-            <MiniStat label="Total" value={project.tasks.length} />
-            <MiniStat label="En cours" value={tasksInProgress} />
-            <MiniStat label="Terminées" value={tasksDone} />
-          </div>
-        </Card>
+      {/* Stats strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-slate-100 bg-white rounded-2xl shadow-sm mb-10 overflow-hidden">
+        <StatCell label="Progression" value={`${project.progress}%`} />
+        <StatCell label="Difficulté" value={`${project.difficulty}/10`} />
+        <StatCell label="Risque" value={`${project.riskScore}/100`} />
+        <StatCell label="Jours restants" value={`${remaining}`} sub={deadline} />
       </div>
 
-      {/* Quick sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <Card className="p-6 lg:col-span-2">
+      {/* Progress bar */}
+      <div className="mb-10">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-widest">Avancement</span>
+          <span className="text-[12px] text-slate-400">{tasksDone} terminées · {tasksInProgress} en cours · {project.tasks.length} total</span>
+        </div>
+        <ProgressBar value={project.progress} />
+      </div>
+
+      {/* 2-col content */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        {/* Deliverables */}
+        <div>
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Target className="w-4 h-4 text-violet-300" />
-              <div className="text-[13px] font-medium">Livrables attendus</div>
-            </div>
+            <h2 className="text-[13px] font-bold text-slate-900 uppercase tracking-widest">Livrables attendus</h2>
             <button
               onClick={() => onJump('summary')}
-              className="text-[11px] text-violet-300/70 hover:text-violet-100 flex items-center gap-1"
+              className="text-[12px] text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1"
             >
-              Détail <ArrowRight className="w-3 h-3" />
+              Tout voir <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
-          <ul className="space-y-2.5">
-            {project.summary.deliverables.slice(0, 5).map((d, i) => (
-              <li key={i} className="flex items-start gap-3">
-                <span className="mt-1 w-1.5 h-1.5 rounded-full bg-violet-400" />
-                <span className="text-[13px] text-violet-100/90">{d}</span>
+          <ul className="space-y-3">
+            {project.summary.deliverables.slice(0, 6).map((d, i) => (
+              <li key={i} className="flex items-start gap-3 pb-3 border-b border-slate-100 last:border-0">
+                <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-bold grid place-items-center">
+                  {i + 1}
+                </span>
+                <span className="text-[13.5px] text-slate-700 leading-snug">{d}</span>
               </li>
             ))}
           </ul>
-        </Card>
+        </div>
 
-        <Card className="p-6">
+        {/* Team load */}
+        <div>
           <div className="flex items-center justify-between mb-4">
-            <div className="text-[13px] font-medium">Charge équipe</div>
+            <h2 className="text-[13px] font-bold text-slate-900 uppercase tracking-widest">Charge équipe</h2>
             <button
               onClick={() => onJump('team')}
-              className="text-[11px] text-violet-300/70 hover:text-violet-100 flex items-center gap-1"
+              className="text-[12px] text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1"
             >
-              Équipe <ArrowRight className="w-3 h-3" />
+              Détails <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {team.map((m) => (
               <div key={m.id}>
-                <div className="flex items-center justify-between text-[12px] mb-1">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2.5">
                     <span
-                      className="w-5 h-5 rounded-full grid place-items-center text-[10px] font-medium"
+                      className="w-6 h-6 rounded-full grid place-items-center text-[10px] font-bold text-white shrink-0"
                       style={{ background: m.color }}
                     >
                       {m.avatar}
                     </span>
-                    {m.name}
+                    <span className="text-[13.5px] font-semibold text-slate-800">{m.name}</span>
                   </div>
-                  <span className="text-violet-300/70">{m.hours} h</span>
+                  <span className="text-[12px] text-slate-400">{m.hours}h · {m.load}%</span>
                 </div>
-                <ProgressBar value={m.load} />
+                <ProgressBar value={m.load} tone={m.load > 35 ? 'amber' : 'violet'} />
               </div>
             ))}
           </div>
-        </Card>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="mt-10 pt-8 border-t border-slate-100 flex flex-wrap gap-3">
+        <button
+          onClick={() => onJump('tasks')}
+          className="px-5 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-[13px] font-semibold text-white transition-colors flex items-center gap-2"
+        >
+          Voir les tâches <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={() => onJump('planning')}
+          className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-700 transition-colors"
+        >
+          Planning
+        </button>
+        <button
+          onClick={() => onJump('warnings')}
+          className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-700 transition-colors"
+        >
+          Warnings
+        </button>
+        <button
+          onClick={() => onJump('risks')}
+          className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-700 transition-colors"
+        >
+          Risques
+        </button>
       </div>
     </div>
   )
 }
 
-function HeroStat({ icon, label, value }) {
+function StatCell({ label, value, sub }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-violet-300/70">
-        {icon}
-        {label}
-      </div>
-      <div className="text-[20px] font-semibold tracking-tight mt-1">
-        {value}
-      </div>
-    </div>
-  )
-}
-
-function MiniStat({ label, value }) {
-  return (
-    <div className="rounded-xl border border-white/5 bg-white/[0.03] py-2">
-      <div className="text-[18px] font-semibold tracking-tight">{value}</div>
-      <div className="text-[10px] uppercase tracking-wider text-violet-300/60">
-        {label}
-      </div>
+    <div className="px-8 py-6">
+      <div className="text-[11px] uppercase tracking-widest text-slate-400 font-semibold mb-1">{label}</div>
+      <div className="text-[34px] font-bold text-slate-900 leading-none">{value}</div>
+      {sub && <div className="text-[11px] text-slate-400 mt-1.5">{sub}</div>}
     </div>
   )
 }

@@ -1,124 +1,89 @@
-import { ShieldAlert, Lightbulb } from 'lucide-react'
+import { ShieldAlert } from 'lucide-react'
 import clsx from 'clsx'
-import { Card, Pill, ProgressBar, SectionHeader, Gauge } from './ui.jsx'
+import { Pill, ProgressBar } from './ui.jsx'
 
-const LEVEL_TONE = {
-  high: 'red',
-  medium: 'amber',
-  low: 'violet',
-}
-const LEVEL_LABEL = {
-  high: 'Élevé',
-  medium: 'Moyen',
-  low: 'Faible',
-}
+const LEVEL_TONE = { high: 'red', medium: 'amber', low: 'default' }
+const LEVEL_LABEL = { high: 'Élevé', medium: 'Moyen', low: 'Faible' }
+const LEVEL_ORDER = { high: 0, medium: 1, low: 2 }
 
 export default function RisksSection({ project }) {
-  const avg = Math.round(
-    project.risks.reduce((s, r) => s + r.score, 0) / project.risks.length,
+  const avg = Math.round(project.risks.reduce((s, r) => s + r.score, 0) / project.risks.length)
+  const sorted = [...project.risks].sort(
+    (a, b) => (LEVEL_ORDER[a.level] ?? 9) - (LEVEL_ORDER[b.level] ?? 9),
   )
+
   return (
     <div>
-      <SectionHeader
-        eyebrow="Détection des risques"
-        title="Anticipe avant que ça parte en vrille"
-        description="EpiPilot évalue les risques classiques d'un projet Epitech : ambition, dépendance, tests, soutenance. Chaque risque vient avec sa mitigation."
-      />
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
-        <Card className="p-6 flex items-center gap-6 lg:col-span-1">
-          <Gauge value={avg} label="Risque" color="#F59E0B" />
-          <div>
-            <div className="text-[11px] uppercase tracking-wider text-violet-300/60">
-              Score global de risque
-            </div>
-            <div className="text-[16px] font-medium mt-1">
-              {avg >= 60 ? 'Vigilance' : avg >= 40 ? 'Modéré' : 'Sous contrôle'}
-            </div>
-            <p className="text-[12px] text-violet-200/60 mt-1 max-w-[240px]">
-              Moyenne pondérée des risques détectés dans le sujet et la
-              répartition équipe.
-            </p>
-          </div>
-        </Card>
-
-        <Card className="p-6 lg:col-span-2">
-          <div className="text-[13px] font-medium mb-3 flex items-center gap-2">
-            <Lightbulb className="w-4 h-4 text-amber-300" /> Conseils prioritaires
-          </div>
-          <ul className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-            {project.risks
-              .filter((r) => r.level !== 'low')
-              .slice(0, 4)
-              .map((r) => (
-                <li
-                  key={r.id}
-                  className="text-[12.5px] text-violet-100/90 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5 leading-relaxed"
-                >
-                  <span className="text-violet-300/80">→</span> {r.mitigation}
-                </li>
-              ))}
-          </ul>
-        </Card>
+      {/* Header */}
+      <div className="mb-8">
+        <div className="text-[11px] uppercase tracking-widest text-slate-400 font-semibold mb-1.5">Détection des risques</div>
+        <h1 className="text-[28px] font-bold text-slate-900 leading-tight">Anticipe avant que ça parte en vrille</h1>
+        <p className="mt-2 text-[14px] text-slate-500 leading-relaxed">
+          EpiPilot évalue les risques classiques d'un projet Epitech. Chaque risque vient avec sa mitigation.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {project.risks.map((r) => (
-          <Card key={r.id} className="p-5">
-            <div className="flex items-start gap-3">
-              <div
-                className={clsx(
-                  'w-9 h-9 rounded-xl grid place-items-center shrink-0',
-                  r.level === 'high' &&
-                    'bg-rose-500/15 border border-rose-400/30',
-                  r.level === 'medium' &&
-                    'bg-amber-400/10 border border-amber-400/30',
-                  r.level === 'low' &&
-                    'bg-violet-500/10 border border-violet-400/30',
-                )}
-              >
-                <ShieldAlert
-                  className={clsx(
-                    'w-4 h-4',
-                    r.level === 'high' && 'text-rose-300',
-                    r.level === 'medium' && 'text-amber-300',
-                    r.level === 'low' && 'text-violet-200',
-                  )}
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <div className="text-[14px] font-medium">{r.title}</div>
-                  <Pill tone={LEVEL_TONE[r.level]}>{LEVEL_LABEL[r.level]}</Pill>
-                </div>
-                <p className="text-[12.5px] text-violet-200/70 mt-1.5 leading-relaxed">
-                  {r.detail}
-                </p>
-                <div className="mt-3">
-                  <div className="flex items-center justify-between text-[11px] mb-1">
-                    <span className="text-violet-300/60">Score</span>
-                    <span className="text-violet-200">{r.score}/100</span>
-                  </div>
-                  <ProgressBar
-                    value={r.score}
-                    tone={
-                      r.level === 'high'
-                        ? 'red'
-                        : r.level === 'medium'
-                          ? 'amber'
-                          : 'violet'
-                    }
+      {/* Score strip */}
+      <div className="bg-white rounded-2xl shadow-sm px-8 py-6 mb-8 flex items-center gap-10">
+        <div>
+          <div className="text-[11px] uppercase tracking-widest text-slate-400 font-semibold mb-1">Score global</div>
+          <div className="text-[42px] font-bold text-slate-900 leading-none">{avg}</div>
+          <div className="text-[13px] text-slate-500 mt-1">
+            {avg >= 60 ? 'Vigilance requise' : avg >= 40 ? 'Niveau modéré' : 'Sous contrôle'}
+          </div>
+        </div>
+        <div className="flex-1 space-y-3">
+          {['high', 'medium', 'low'].map((level) => {
+            const count = sorted.filter((r) => r.level === level).length
+            return (
+              <div key={level} className="flex items-center gap-3">
+                <Pill tone={LEVEL_TONE[level]} className="w-20 justify-center">{LEVEL_LABEL[level]}</Pill>
+                <div className="text-[13px] text-slate-600 font-semibold w-4">{count}</div>
+                <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className={clsx('h-full rounded-full', level === 'high' ? 'bg-red-400' : level === 'medium' ? 'bg-amber-400' : 'bg-slate-300')}
+                    style={{ width: `${(count / sorted.length) * 100}%` }}
                   />
                 </div>
-                <div className="mt-3 text-[12px] text-violet-100/90 px-3 py-2 rounded-xl bg-violet-500/10 border border-violet-400/20">
-                  <span className="text-violet-300/80 text-[10.5px] uppercase tracking-wider mr-2">
-                    Mitigation
-                  </span>
-                  {r.mitigation}
-                </div>
               </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="grid grid-cols-[100px_1fr_80px_200px] px-6 py-3 border-b border-slate-100 bg-slate-50">
+          <div className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Niveau</div>
+          <div className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Risque</div>
+          <div className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Score</div>
+          <div className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Mitigation</div>
+        </div>
+        {sorted.map((r, i) => (
+          <div
+            key={r.id}
+            className={clsx(
+              'grid grid-cols-[100px_1fr_80px_200px] px-6 py-4 gap-4 items-start',
+              i < sorted.length - 1 && 'border-b border-slate-100',
+              'hover:bg-slate-50 transition-colors',
+            )}
+          >
+            <div className="pt-0.5">
+              <Pill tone={LEVEL_TONE[r.level]}>{LEVEL_LABEL[r.level]}</Pill>
             </div>
-          </Card>
+            <div>
+              <div className="text-[13.5px] font-semibold text-slate-900 mb-1">{r.title}</div>
+              <div className="text-[12.5px] text-slate-500 leading-relaxed">{r.detail}</div>
+            </div>
+            <div>
+              <div className="text-[15px] font-bold text-slate-900 mb-1">{r.score}</div>
+              <ProgressBar
+                value={r.score}
+                tone={r.level === 'high' ? 'red' : r.level === 'medium' ? 'amber' : 'violet'}
+              />
+            </div>
+            <div className="text-[12px] text-slate-600 leading-relaxed">{r.mitigation}</div>
+          </div>
         ))}
       </div>
     </div>

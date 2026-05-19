@@ -1,82 +1,68 @@
-import { Flag, Calendar as CalendarIcon, ChevronRight } from 'lucide-react'
-import { Card, Pill, SectionHeader, CATEGORY_TONE } from './ui.jsx'
+import { Flag } from 'lucide-react'
+import { Pill, CATEGORY_TONE } from './ui.jsx'
 
 export default function PlanningSection({ project }) {
+  const deadline = new Date(project.deadline).toLocaleDateString('fr-FR', {
+    day: '2-digit', month: 'long', year: 'numeric',
+  })
+
   return (
     <div>
-      <SectionHeader
-        eyebrow="Roadmap générée"
-        title="Planning de travail réaliste"
-        description="Découpage hebdomadaire calculé à partir de la deadline, du nombre de membres et de la charge estimée. Ajustable au besoin."
-        action={
-          <Pill tone="violet">
-            <CalendarIcon className="w-3 h-3" /> Deadline ·{' '}
-            {new Date(project.deadline).toLocaleDateString('fr-FR', {
-              day: '2-digit',
-              month: 'short',
-            })}
-          </Pill>
-        }
-      />
+      {/* Header */}
+      <div className="mb-8">
+        <div className="text-[11px] uppercase tracking-widest text-slate-400 font-semibold mb-1.5">Roadmap générée</div>
+        <h1 className="text-[28px] font-bold text-slate-900 leading-tight">Planning de travail</h1>
+        <p className="mt-2 text-[14px] text-slate-500 leading-relaxed">
+          Découpage hebdomadaire calculé à partir de la deadline du <strong className="text-slate-700 font-semibold">{deadline}</strong>.
+        </p>
+      </div>
 
-      <div className="relative">
-        <div className="absolute left-[26px] top-0 bottom-0 w-px bg-gradient-to-b from-violet-400/40 via-violet-500/20 to-transparent" />
+      {/* Timeline */}
+      <div className="space-y-1">
+        {project.planning.map((sprint, idx) => {
+          const tasks = sprint.taskIds
+            .map((id) => project.tasks.find((t) => t.id === id))
+            .filter(Boolean)
 
-        <div className="space-y-6">
-          {project.planning.map((sprint, idx) => {
-            const tasks = sprint.taskIds
-              .map((id) => project.tasks.find((t) => t.id === id))
-              .filter(Boolean)
-            return (
-              <div key={sprint.id} className="relative pl-16">
-                <div className="absolute left-0 top-2 w-[52px] flex justify-center">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500/30 to-violet-700/10 border border-violet-400/30 grid place-items-center shadow-glow text-[13px] font-semibold">
-                    {idx + 1}
+          return (
+            <div key={sprint.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              {/* Sprint header */}
+              <div className="flex items-center gap-4 px-6 py-4 border-b border-slate-100">
+                <div className="w-8 h-8 rounded-xl bg-slate-900 grid place-items-center text-white text-[12px] font-bold shrink-0">
+                  {idx + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="text-[15px] font-bold text-slate-900">{sprint.label}</span>
+                    <span className="text-[12px] text-slate-400">{sprint.range}</span>
+                    <span className="text-[12px] text-slate-500 italic">{sprint.theme}</span>
                   </div>
                 </div>
-                <Card className="p-5">
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div>
-                      <div className="text-[11px] uppercase tracking-wider text-violet-300/60">
-                        {sprint.range}
-                      </div>
-                      <div className="text-[16px] font-semibold tracking-tight mt-0.5">
-                        {sprint.label}
-                      </div>
-                      <p className="text-[12.5px] text-violet-200/70 mt-1">
-                        {sprint.theme}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {sprint.milestones.map((m, i) => (
-                        <Pill key={i} tone="violet">
-                          <Flag className="w-3 h-3" /> {m}
-                        </Pill>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {tasks.map((t) => (
-                      <div
-                        key={t.id}
-                        className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/5"
-                      >
-                        <ChevronRight className="w-3 h-3 text-violet-300/60" />
-                        <span className="text-[12.5px] flex-1 truncate">
-                          {t.title}
-                        </span>
-                        <Pill tone={CATEGORY_TONE[t.category]}>
-                          {t.category}
-                        </Pill>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {sprint.milestones.map((m, i) => (
+                    <Pill key={i} tone="amber">
+                      <Flag className="w-2.5 h-2.5" /> {m}
+                    </Pill>
+                  ))}
+                </div>
               </div>
-            )
-          })}
-        </div>
+
+              {/* Tasks */}
+              <div className="divide-y divide-slate-50">
+                {tasks.map((t) => (
+                  <div key={t.id} className="flex items-center gap-4 px-6 py-3 hover:bg-slate-50 transition-colors">
+                    <div className="w-1 h-1 rounded-full bg-slate-300 shrink-0" />
+                    <span className="text-[13px] text-slate-700 flex-1">{t.title}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Pill tone={CATEGORY_TONE[t.category]}>{t.category}</Pill>
+                      <span className="text-[11px] text-slate-400">{t.hours}h</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
