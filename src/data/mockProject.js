@@ -1,6 +1,6 @@
 // Mock data structured exactly as a real AI analysis pipeline would output it.
 // Project: AREA — a classic Epitech 3rd-year Web project (IFTTT clone).
-// Branchez Claude API ici plus tard : remplacer cet objet par la sortie du modèle.
+// Branchez l'API OpenAI ici plus tard : remplacer cet objet par la sortie du modèle.
 
 export const mockProject = {
   id: 'area-2026',

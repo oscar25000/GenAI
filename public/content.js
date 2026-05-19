@@ -14,8 +14,8 @@
  * lives in /public so Vite copies it verbatim.
  */
 ;(function () {
-  if (window.__EPIPILOT_CONTENT__) return
-  window.__EPIPILOT_CONTENT__ = true
+  if (window.__EPILOT_CONTENT__) return
+  window.__EPILOT_CONTENT__ = true
 
   // ───────────────────────────────────────────────────────────── styles ──
   const STYLE = `
@@ -42,17 +42,17 @@
   opacity: 0;
   pointer-events: none;
 }
-.epipilot-has-btn:hover > .epipilot-btn,
-.epipilot-btn:hover,
-.epipilot-btn:focus-visible {
+.epilot-has-btn:hover > .epilot-btn,
+.epilot-btn:hover,
+.epilot-btn:focus-visible {
   opacity: 1;
   pointer-events: auto;
 }
-.epipilot-btn:hover { background: #1D4ED8; }
-.epipilot-btn[disabled] { opacity: 0.6; cursor: not-allowed; }
-.epipilot-btn svg { width: 10px; height: 10px; }
+.epilot-btn:hover { background: #1D4ED8; }
+.epilot-btn[disabled] { opacity: 0.6; cursor: not-allowed; }
+.epilot-btn svg { width: 10px; height: 10px; }
 
-.epipilot-detail-btn {
+.epilot-detail-btn {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -69,13 +69,13 @@
   box-shadow: 0 6px 24px -6px rgba(130, 87, 255, 0.55);
   transition: transform 120ms ease, box-shadow 120ms ease;
 }
-.epipilot-detail-btn:hover {
+.epilot-detail-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 10px 28px -6px rgba(130, 87, 255, 0.7);
 }
-.epipilot-detail-btn svg { width: 13px; height: 13px; }
+.epilot-detail-btn svg { width: 13px; height: 13px; }
 
-.epipilot-fab {
+.epilot-fab {
   position: fixed;
   bottom: 24px;
   right: 24px;
@@ -96,18 +96,18 @@
   transition: transform 120ms ease, box-shadow 120ms ease;
   animation: epipilot-fade-in 250ms ease-out;
 }
-.epipilot-fab:hover {
+.epilot-fab:hover {
   transform: translateY(-2px);
   box-shadow: 0 18px 44px -10px rgba(130, 87, 255, 0.8);
 }
-.epipilot-fab svg { width: 14px; height: 14px; }
-.epipilot-fab .status {
+.epilot-fab svg { width: 14px; height: 14px; }
+.epilot-fab .status {
   font-size: 10.5px;
   opacity: 0.7;
   font-weight: 400;
 }
 
-.epipilot-toast {
+.epilot-toast {
   position: fixed;
   bottom: 24px;
   right: 24px;
@@ -127,7 +127,7 @@
   gap: 8px;
   animation: epipilot-fade-in 200ms ease-out;
 }
-.epipilot-toast .dot {
+.epilot-toast .dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -135,7 +135,7 @@
   box-shadow: 0 0 12px #8257FF;
 }
 
-.epipilot-overlay-backdrop {
+.epilot-overlay-backdrop {
   position: fixed;
   inset: 0;
   z-index: 2147483647;
@@ -148,7 +148,7 @@
   animation: epipilot-fade-in 200ms ease-out;
   font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
 }
-.epipilot-overlay {
+.epilot-overlay {
   width: 100%;
   max-width: 480px;
   color: #F4F1FF;
@@ -158,13 +158,13 @@
   padding: 22px;
   box-shadow: 0 30px 80px -20px rgba(0,0,0,0.7), 0 0 40px -8px rgba(130, 87, 255, 0.3);
 }
-.epipilot-overlay-header {
+.epilot-overlay-header {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
 }
-.epipilot-overlay-logo {
+.epilot-overlay-logo {
   width: 36px;
   height: 36px;
   border-radius: 12px;
@@ -173,19 +173,19 @@
   place-items: center;
   box-shadow: 0 0 28px -4px rgba(130, 87, 255, 0.7);
 }
-.epipilot-overlay-logo svg { width: 16px; height: 16px; color: white; }
-.epipilot-overlay h3 {
+.epilot-overlay-logo svg { width: 16px; height: 16px; color: white; }
+.epilot-overlay h3 {
   margin: 0;
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
-.epipilot-overlay .sub {
+.epilot-overlay .sub {
   margin: 0;
   font-size: 11px;
   color: rgba(244, 241, 255, 0.5);
 }
-.epipilot-overlay .close {
+.epilot-overlay .close {
   margin-left: auto;
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.08);
@@ -196,10 +196,10 @@
   display: grid;
   place-items: center;
 }
-.epipilot-overlay .close:hover { color: white; background: rgba(255,255,255,0.1); }
-.epipilot-overlay .close svg { width: 12px; height: 12px; }
+.epilot-overlay .close:hover { color: white; background: rgba(255,255,255,0.1); }
+.epilot-overlay .close svg { width: 12px; height: 12px; }
 
-.epipilot-project-name {
+.epilot-project-name {
   font-size: 13px;
   color: rgba(244, 241, 255, 0.85);
   background: rgba(255,255,255,0.04);
@@ -208,7 +208,7 @@
   border-radius: 12px;
   margin-bottom: 14px;
 }
-.epipilot-project-name .label {
+.epilot-project-name .label {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -217,7 +217,7 @@
   margin-bottom: 2px;
 }
 
-.epipilot-steps {
+.epilot-steps {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -225,7 +225,7 @@
   flex-direction: column;
   gap: 8px;
 }
-.epipilot-steps li {
+.epilot-steps li {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -233,9 +233,9 @@
   color: rgba(244, 241, 255, 0.5);
   transition: color 200ms ease;
 }
-.epipilot-steps li.active { color: #F4F1FF; }
-.epipilot-steps li.done { color: rgba(181, 156, 255, 0.85); }
-.epipilot-steps li .marker {
+.epilot-steps li.active { color: #F4F1FF; }
+.epilot-steps li.done { color: rgba(181, 156, 255, 0.85); }
+.epilot-steps li .marker {
   width: 14px;
   height: 14px;
   border-radius: 50%;
@@ -245,22 +245,22 @@
   place-items: center;
   transition: all 200ms ease;
 }
-.epipilot-steps li.done .marker {
+.epilot-steps li.done .marker {
   background: linear-gradient(135deg, #8257FF, #5429D6);
   border-color: rgba(130, 87, 255, 0.5);
 }
-.epipilot-steps li.done .marker::after {
+.epilot-steps li.done .marker::after {
   content: '';
   width: 5px;
   height: 5px;
   background: white;
   border-radius: 50%;
 }
-.epipilot-steps li.active .marker {
+.epilot-steps li.active .marker {
   border-color: #8257FF;
   background: rgba(130, 87, 255, 0.15);
 }
-.epipilot-steps li.active .marker::after {
+.epilot-steps li.active .marker::after {
   content: '';
   width: 4px;
   height: 4px;
@@ -269,13 +269,13 @@
   animation: epipilot-pulse 1.2s ease-in-out infinite;
 }
 
-.epipilot-actions {
+.epilot-actions {
   margin-top: 18px;
   display: flex;
   gap: 8px;
   justify-content: flex-end;
 }
-.epipilot-actions button {
+.epilot-actions button {
   font-size: 12px;
   padding: 9px 14px;
   border-radius: 10px;
@@ -284,22 +284,22 @@
   border: 1px solid transparent;
   transition: all 120ms ease;
 }
-.epipilot-actions .secondary {
+.epilot-actions .secondary {
   background: rgba(255,255,255,0.05);
   color: rgba(244, 241, 255, 0.85);
   border-color: rgba(255,255,255,0.1);
 }
-.epipilot-actions .secondary:hover { background: rgba(255,255,255,0.09); }
-.epipilot-actions .primary {
+.epilot-actions .secondary:hover { background: rgba(255,255,255,0.09); }
+.epilot-actions .primary {
   background: linear-gradient(135deg, #8257FF, #5429D6);
   color: white;
   border-color: rgba(130, 87, 255, 0.4);
   box-shadow: 0 4px 18px -4px rgba(130, 87, 255, 0.55);
   font-weight: 500;
 }
-.epipilot-actions .primary:hover { transform: translateY(-1px); }
+.epilot-actions .primary:hover { transform: translateY(-1px); }
 
-.epipilot-error {
+.epilot-error {
   margin-top: 4px;
   padding: 10px 12px;
   border-radius: 10px;
@@ -310,11 +310,11 @@
   line-height: 1.45;
 }
 
-@keyframes epipilot-fade-in {
+@keyframes epilot-fade-in {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
-@keyframes epipilot-pulse {
+@keyframes epilot-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.5; transform: scale(1.4); }
 }
@@ -322,7 +322,7 @@
 
   const styleEl = document.createElement('style')
   styleEl.textContent = STYLE
-  styleEl.dataset.epipilot = 'styles'
+  styleEl.dataset.epilot = 'styles'
   document.documentElement.appendChild(styleEl)
 
   // ──────────────────────────────────────────────────────── SVG snippets ──
@@ -687,7 +687,7 @@
 
   const STEP_LABELS = [
     'Récupération du PDF du sujet',
-    'Envoi à Claude',
+    'Envoi à OpenAI',
     'Identification du contexte et des objectifs',
     'Détection des livrables et contraintes',
     'Génération des tâches et du planning',
@@ -707,7 +707,7 @@
           <div class="epipilot-overlay-logo">${ICONS.sparkles}</div>
           <div>
             <h3>Analyse en cours</h3>
-            <p class="sub">EpiPilot · Claude Opus 4.7</p>
+            <p class="sub">EpiPilot · OpenAI GPT-4o</p>
           </div>
           <button class="close" aria-label="Fermer">${ICONS.close}</button>
         </div>
@@ -815,7 +815,7 @@
   // ───────────────────────────────────── messages from background SW ──
   const STAGE_TO_STEP = [
     { match: /Préparation/i, step: 1 },
-    { match: /Envoi du PDF|Envoi à Claude/i, step: 1 },
+    { match: /Envoi du PDF|Envoi à OpenAI/i, step: 1 },
     { match: /contexte|objectifs/i, step: 2 },
     { match: /livrables|contraintes/i, step: 3 },
     { match: /tâches|planning/i, step: 4 },
@@ -841,8 +841,8 @@
     if (code === 'API_KEY_MISSING')
       return "Pas de clé API. Ouvre le dashboard EpiPilot et configure-la dans Settings."
     if (code === 'API_KEY_INVALID') return 'Clé API refusée.'
-    if (code === 'RATE_LIMITED') return 'Limite Anthropic atteinte. Réessaie dans une minute.'
-    if (code === 'NO_OUTPUT') return "Claude n'a pas retourné de réponse exploitable."
+    if (code === 'RATE_LIMITED') return 'Limite OpenAI atteinte. Réessaie dans une minute.'
+    if (code === 'NO_OUTPUT') return "OpenAI n'a pas retourné de réponse exploitable."
     if (code === 'PARSE_FAILED') return 'Impossible de parser la réponse JSON.'
     if (code.startsWith('FETCH_FAILED')) return `Téléchargement du PDF impossible (${code.replace('FETCH_FAILED:', '').trim()}).`
     if (code.startsWith('BAD_REQUEST')) return `Requête refusée : ${code.replace('BAD_REQUEST:', '').trim()}`

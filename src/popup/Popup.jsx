@@ -65,7 +65,7 @@ const ERROR_LABELS = {
   RATE_LIMITED: 'Limite de requêtes atteinte. Réessaie dans une minute.',
   PDF_MISSING: 'Aucun PDF fourni.',
   TEAM_EMPTY: "L'équipe est vide. Configure-la dans les Settings.",
-  NO_OUTPUT: "Claude n'a pas retourné de réponse exploitable.",
+  NO_OUTPUT: "OpenAI n'a pas retourné de réponse exploitable.",
   PARSE_FAILED: 'Impossible de parser la réponse JSON.',
 }
 
@@ -262,8 +262,8 @@ export default function Popup() {
         {status === 'idle' && (
           <p className="text-sm text-violet-100/70 leading-snug">
             {hasKey
-              ? 'Prêt. Lance une analyse IA via Claude.'
-              : 'Démo : clique sur Analyser pour générer un plan mock. Ajoute ta clé Claude API dans les Settings pour activer la vraie analyse.'}
+              ? 'Prêt. Lance une analyse IA via OpenAI.'
+              : 'Démo : clique sur Analyser pour générer un plan mock. Ajoute ta clé OpenAI dans les Settings pour activer la vraie analyse.'}
           </p>
         )}
 
@@ -365,7 +365,7 @@ function ModeBadge({ hasKey }) {
       }`}
     >
       <KeyRound className="w-3 h-3" />
-      {hasKey ? 'Mode IA · Claude Opus 4.7' : 'Mode démo · données mock'}
+      {hasKey ? 'Mode IA · OpenAI GPT-4o' : 'Mode démo · données mock'}
     </div>
   )
 }

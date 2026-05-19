@@ -1,6 +1,6 @@
-// JSON Schema for structured output from Claude.
-// Constraints (Anthropic structured outputs): all objects need
-// additionalProperties: false; no numerical/string constraints; no recursion.
+// JSON Schema for OpenAI Responses API structured output (json_schema, strict).
+// Constraints: every object must set additionalProperties: false and list ALL
+// of its properties in `required`; no numerical/string constraints; no recursion.
 
 export const projectSchema = {
   type: 'object',

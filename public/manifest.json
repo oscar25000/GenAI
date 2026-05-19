@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "EpiPilot",
-  "short_name": "EpiPilot",
-  "version": "0.1.0",
+  "name": "Epilot",
+  "short_name": "Epilot",
+  "version": "0.2.0",
   "description": "Transforme ton sujet Epitech en plan de projet clair, organisé et prêt à exécuter.",
   "action": {
-    "default_title": "EpiPilot",
+    "default_title": "Epilot",
     "default_popup": "popup.html"
   },
   "background": {
@@ -17,7 +17,7 @@
     "https://intra.epitech.eu/*",
     "https://my.epitech.eu/*",
     "https://*.epitech.eu/*",
-    "https://api.anthropic.com/*",
+    "https://api.openai.com/*",
     "https://*.cloud.ovh.net/*",
     "https://*.amazonaws.com/*",
     "https://*.googleusercontent.com/*",

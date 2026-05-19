@@ -18,7 +18,7 @@ const DEFAULT_TEAM = [
 ]
 
 const DEFAULTS = {
-  [KEYS.model]: 'claude-opus-4-7',
+  [KEYS.model]: 'gpt-4o',
   [KEYS.team]: DEFAULT_TEAM,
   [KEYS.enableThinking]: false,
 }
@@ -88,19 +88,29 @@ export async function saveProject(project) {
 // status: 'pending' | 'thinking' | 'idle' | 'done' | 'error'
 
 export async function getConversation() {
-  if (hasChromeStorage()) {
-    return new Promise((resolve) => {
-      chrome.storage.local.get([KEYS.conversation], (res) => {
-        resolve(res[KEYS.conversation] || null)
+  const conv = await (() => {
+    if (hasChromeStorage()) {
+      return new Promise((resolve) => {
+        chrome.storage.local.get([KEYS.conversation], (res) => {
+          resolve(res[KEYS.conversation] || null)
+        })
       })
-    })
-  }
-  try {
-    const raw = localStorage.getItem(KEYS.conversation)
-    return raw ? JSON.parse(raw) : null
-  } catch {
+    }
+    try {
+      const raw = localStorage.getItem(KEYS.conversation)
+      return raw ? JSON.parse(raw) : null
+    } catch {
+      return null
+    }
+  })()
+  // Conversations created before the OpenAI migration used Anthropic-shaped
+  // history items (tool_use / tool_result content blocks). Drop them rather
+  // than feeding them to the new client.
+  if (conv && conv.version !== 2) {
+    await clearConversation()
     return null
   }
+  return conv
 }
 
 export async function saveConversation(conv) {

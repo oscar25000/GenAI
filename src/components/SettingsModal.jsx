@@ -15,16 +15,16 @@ import {
 import { DEFAULT_TEAM, getSettings, saveSettings } from '../lib/storage.js'
 
 const MODELS = [
-  { id: 'claude-opus-4-7', label: 'Opus 4.7', desc: 'Le plus capable (recommandé)' },
-  { id: 'claude-sonnet-4-6', label: 'Sonnet 4.6', desc: 'Bon ratio rapidité / intelligence' },
-  { id: 'claude-haiku-4-5', label: 'Haiku 4.5', desc: 'Rapide et économique' },
+  { id: 'gpt-4o', label: 'GPT-4o', desc: 'Le plus capable (recommandé)' },
+  { id: 'gpt-4o-mini', label: 'GPT-4o mini', desc: 'Bon ratio rapidité / intelligence' },
+  { id: 'gpt-4.1', label: 'GPT-4.1', desc: 'Long contexte, raisonnement renforcé' },
 ]
 
 const PRESET_COLORS = ['#8257FF', '#6A3BF5', '#B59CFF', '#9B7BFF', '#F59E0B', '#EC4899', '#10B981', '#3B82F6']
 
 export default function SettingsModal({ open, onClose, onSaved }) {
   const [apiKey, setApiKey] = useState('')
-  const [model, setModel] = useState('claude-opus-4-7')
+  const [model, setModel] = useState('gpt-4o')
   const [enableThinking, setEnableThinking] = useState(false)
   const [team, setTeam] = useState(DEFAULT_TEAM)
   const [showKey, setShowKey] = useState(false)
@@ -34,7 +34,7 @@ export default function SettingsModal({ open, onClose, onSaved }) {
     if (!open) return
     getSettings().then((s) => {
       setApiKey(s.apiKey || '')
-      setModel(s.model || 'claude-opus-4-7')
+      setModel(s.model || 'gpt-4o')
       setEnableThinking(Boolean(s.enableThinking))
       setTeam(s.team?.length ? s.team : DEFAULT_TEAM)
     })
@@ -96,17 +96,17 @@ export default function SettingsModal({ open, onClose, onSaved }) {
 
         <div className="px-6 py-6 space-y-7">
           <section>
-            <SectionTitle icon={KeyRound} title="Clé API Anthropic" />
+            <SectionTitle icon={KeyRound} title="Clé API OpenAI" />
             <p className="text-[12px] text-violet-200/60 mb-3 leading-relaxed">
-              Ta clé est stockée localement (chrome.storage.local). Elle ne quitte ton navigateur que pour appeler api.anthropic.com.
+              Ta clé est stockée localement (chrome.storage.local). Elle ne quitte ton navigateur que pour appeler api.openai.com.
               Génère-la sur{' '}
               <a
-                href="https://console.anthropic.com/settings/keys"
+                href="https://platform.openai.com/api-keys"
                 target="_blank"
                 rel="noreferrer"
                 className="text-violet-300 hover:text-violet-200 underline-offset-2 hover:underline inline-flex items-center gap-1"
               >
-                console.anthropic.com <ExternalLink className="w-3 h-3" />
+                platform.openai.com <ExternalLink className="w-3 h-3" />
               </a>
               .
             </p>
@@ -117,7 +117,7 @@ export default function SettingsModal({ open, onClose, onSaved }) {
                   type={showKey ? 'text' : 'password'}
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="sk-ant-api03-…"
+                  placeholder="sk-…"
                   className="flex-1 bg-transparent text-[13px] text-violet-50 placeholder:text-violet-300/30 focus:outline-none font-mono"
                 />
                 <button
@@ -132,7 +132,7 @@ export default function SettingsModal({ open, onClose, onSaved }) {
           </section>
 
           <section>
-            <SectionTitle icon={Cpu} title="Modèle Claude" />
+            <SectionTitle icon={Cpu} title="Modèle OpenAI" />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-3">
               {MODELS.map((m) => (
                 <button
@@ -152,16 +152,6 @@ export default function SettingsModal({ open, onClose, onSaved }) {
                 </button>
               ))}
             </div>
-
-            <label className="mt-3 flex items-center gap-2 text-[12px] text-violet-200/80 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={enableThinking}
-                onChange={(e) => setEnableThinking(e.target.checked)}
-                className="accent-violet-500"
-              />
-              Activer l'adaptive thinking (analyse plus poussée, +latence et +coût)
-            </label>
           </section>
 
           <section>
@@ -232,7 +222,7 @@ export default function SettingsModal({ open, onClose, onSaved }) {
         <div className="sticky bottom-0 backdrop-blur-xl bg-ink-900/70 border-t border-white/5 px-6 py-4 flex items-center justify-between rounded-b-3xl">
           <div className="text-[11px] text-violet-300/60">
             {apiKey
-              ? 'Une clé est définie. Les analyses utiliseront Claude.'
+              ? 'Une clé est définie. Les analyses utiliseront OpenAI.'
               : "Aucune clé : EpiPilot tournera en mode démo (données mock)."}
           </div>
           <div className="flex items-center gap-2">

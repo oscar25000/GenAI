@@ -5,7 +5,7 @@
 //  - Drive the guided conversation: fetch PDF, run agentic chat loop, broadcast updates
 //  - Open the dashboard from the content script's "Analyser" button
 
-import { analyzePdfWithClaude, chatTurn } from './lib/claudeClient.js'
+import { analyzePdfWithOpenAI, chatTurn } from './lib/openaiClient.js'
 import {
   getSettings,
   saveProject,
@@ -168,10 +168,9 @@ async function runAnalysis({ pdfBase64, pdfFilename }) {
   inflight = (async () => {
     try {
       broadcast({ type: 'epipilot:progress', stage: 'Préparation de la requête…' })
-      const { project, usage } = await analyzePdfWithClaude({
+      const { project, usage } = await analyzePdfWithOpenAI({
         apiKey: settings.apiKey,
         model: settings.model,
-        enableThinking: settings.enableThinking,
         pdfBase64,
         pdfFilename,
         team: settings.team,
@@ -216,6 +215,7 @@ async function startConversationFromBase64({ pdfBase64, pdfFilename, projectName
 Lis le PDF, produis un résumé clair avec set_summary, puis démarre la conversation pour construire le plan ensemble. Commence par te présenter brièvement et présente le résumé.`
 
   const conversation = {
+    version: 2, // 2 = OpenAI Responses API history format
     messages: [{ role: 'user', content: firstUserMessage }],
     project,
     pdfBase64,
@@ -254,13 +254,13 @@ async function runNextTurn({ includePdf }) {
 
   inflight = (async () => {
     try {
-      const { assistantText, project } = await chatTurn({
+      const { assistantText, project, history } = await chatTurn({
         apiKey: settings.apiKey,
         model: settings.model,
-        enableThinking: settings.enableThinking,
         history: conv.messages,
         project: conv.project,
         pdfBase64: includePdf ? conv.pdfBase64 : null,
+        pdfFilename: conv.pdfFilename,
         onToolApplied: async (toolName, nextProject) => {
           conv.project = nextProject
           await saveConversation(conv)
@@ -274,10 +274,10 @@ async function runNextTurn({ includePdf }) {
           broadcast({ type: 'epipilot:conv-progress', stage }),
       })
 
-      conv.messages.push({
-        role: 'assistant',
-        content: assistantText || '…',
-      })
+      conv.messages = history
+      if (assistantText) {
+        conv.lastAssistantText = assistantText
+      }
       conv.project = project
       conv.status = 'idle'
       await saveConversation(conv)

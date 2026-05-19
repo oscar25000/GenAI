@@ -1,14 +1,17 @@
-// Tools exposed to Claude during the guided conversation.
+// Tools exposed to the model during the guided conversation.
+// Format = OpenAI Responses API function tools (flat shape:
+// { type: 'function', name, description, parameters, strict }).
 // Each tool corresponds to a chunk of the project plan. The agent calls them
 // as the conversation progresses; the background SW applies the patch to the
 // shared project state and persists it.
 
 export const projectTools = [
   {
+    type: 'function',
     name: 'set_summary',
     description:
       "Définit ou met à jour le résumé du projet : nom court, objectif, ce qu'il faut construire, contraintes principales, livrables imposés. À appeler dès que tu as lu le PDF.",
-    input_schema: {
+    parameters: {
       type: 'object',
       additionalProperties: false,
       properties: {
@@ -32,13 +35,15 @@ export const projectTools = [
       },
       required: ['name', 'goal', 'whatToBuild', 'constraints', 'deliverables'],
     },
+    strict: true,
   },
 
   {
+    type: 'function',
     name: 'set_team',
     description:
       "Enregistre l'équipe et les compétences de chaque membre. À appeler une fois que l'utilisateur a partagé les prénoms et les rôles. Mets à jour la liste complète à chaque appel.",
-    input_schema: {
+    parameters: {
       type: 'object',
       additionalProperties: false,
       properties: {
@@ -61,13 +66,15 @@ export const projectTools = [
       },
       required: ['members'],
     },
+    strict: true,
   },
 
   {
+    type: 'function',
     name: 'set_warnings',
     description:
       "Enregistre les points critiques 'à ne pas oublier' déduits du sujet (README, docker-compose, route /about.json, tests, .env.example, schéma d'architecture, plan B démo…). 8 à 12 items typiquement.",
-    input_schema: {
+    parameters: {
       type: 'object',
       additionalProperties: false,
       properties: {
@@ -101,13 +108,15 @@ export const projectTools = [
       },
       required: ['items'],
     },
+    strict: true,
   },
 
   {
+    type: 'function',
     name: 'set_tasks',
     description:
       "Définit la liste complète des tâches du projet (15 à 25 typiquement). À appeler après avoir collecté l'équipe et l'ambition de l'équipe. assigneeName doit matcher exactement un name de l'équipe.",
-    input_schema: {
+    parameters: {
       type: 'object',
       additionalProperties: false,
       properties: {
@@ -147,13 +156,15 @@ export const projectTools = [
       },
       required: ['tasks'],
     },
+    strict: true,
   },
 
   {
+    type: 'function',
     name: 'set_planning',
     description:
       "Définit le planning par sprints (4 à 6 sprints couvrant toute la durée). Chaque sprint référence des tâches par titre exact.",
-    input_schema: {
+    parameters: {
       type: 'object',
       additionalProperties: false,
       properties: {
@@ -179,12 +190,14 @@ export const projectTools = [
       },
       required: ['sprints'],
     },
+    strict: true,
   },
 
   {
+    type: 'function',
     name: 'set_risks',
     description: 'Définit les risques projet avec leur mitigation (5 à 7 items).',
-    input_schema: {
+    parameters: {
       type: 'object',
       additionalProperties: false,
       properties: {
@@ -206,12 +219,14 @@ export const projectTools = [
       },
       required: ['risks'],
     },
+    strict: true,
   },
 
   {
+    type: 'function',
     name: 'set_checklist',
     description: 'Définit la checklist finale avant rendu (10 à 15 items).',
-    input_schema: {
+    parameters: {
       type: 'object',
       additionalProperties: false,
       properties: {
@@ -229,31 +244,34 @@ export const projectTools = [
       },
       required: ['items'],
     },
+    strict: true,
   },
 
   {
+    type: 'function',
     name: 'update_meta',
     description:
-      'Met à jour les métadonnées globales du projet (difficulté, score de risque, deadline, durée, heures estimées).',
-    input_schema: {
+      'Met à jour les métadonnées globales du projet (difficulté, score de risque, deadline, durée, heures estimées). Tous les champs sont requis ; passe null pour les valeurs inconnues.',
+    parameters: {
       type: 'object',
       additionalProperties: false,
       properties: {
-        difficulty: { type: 'number', description: '0-10' },
-        riskScore: { type: 'integer', description: '0-100' },
-        deadline: { type: 'string', description: 'ISO 8601' },
-        durationDays: { type: 'integer' },
-        estimatedHours: { type: 'integer' },
+        difficulty: { type: ['number', 'null'], description: '0-10' },
+        riskScore: { type: ['integer', 'null'], description: '0-100' },
+        deadline: { type: ['string', 'null'], description: 'ISO 8601' },
+        durationDays: { type: ['integer', 'null'] },
+        estimatedHours: { type: ['integer', 'null'] },
       },
-      required: [],
+      required: ['difficulty', 'riskScore', 'deadline', 'durationDays', 'estimatedHours'],
     },
+    strict: true,
   },
 ]
 
 // ───────────────────────────────────────────────────────────────────────────
-// Tool execution — applies a tool_use block from Claude to the shared
+// Tool execution — applies a function_call from the model to the shared
 // project state object. Returns the patched project plus a short status
-// string that's sent back to the model as the tool_result.
+// string that's sent back to the model as the function_call_output.
 
 let idCounter = 0
 function nextId(prefix) {

@@ -1,17 +1,16 @@
 {
-  "name": "epipilot",
+  "name": "epilot",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "EpiPilot — Transforme ton sujet Epitech en plan de projet clair, organisé et prêt à exécuter.",
+  "description": "Epilot — Transforme ton sujet Epitech en plan de projet clair, organisé et prêt à exécuter.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "package": "vite build && cd dist && zip -r ../epipilot.zip ."
+    "package": "vite build && cd dist && zip -r ../epilot.zip ."
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.40.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.395.0",
     "react": "^18.3.1",

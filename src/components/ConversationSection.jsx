@@ -346,9 +346,9 @@ function BootingState({ stage }) {
 
 const ERROR_LABELS = {
   API_KEY_MISSING:
-    "Pas de clé API Anthropic. Ouvre les Settings et colle ta clé depuis console.anthropic.com.",
-  API_KEY_INVALID: 'Clé API refusée par Anthropic. Vérifie qu\'elle est valide.',
-  RATE_LIMITED: 'Limite Anthropic atteinte. Réessaie dans une minute.',
+    "Pas de clé API OpenAI. Ouvre les Settings et colle ta clé depuis platform.openai.com.",
+  API_KEY_INVALID: 'Clé API refusée par OpenAI. Vérifie qu\'elle est valide.',
+  RATE_LIMITED: 'Limite OpenAI atteinte. Réessaie dans une minute.',
 }
 
 function describeError(code) {
@@ -358,7 +358,7 @@ function describeError(code) {
     return `Téléchargement du PDF impossible — ${code.replace('FETCH_FAILED:', '').trim()}. Le viewer my.epitech.eu utilise une URL signée temporaire qui a peut-être expiré ou que l'extension n'a pas la permission de récupérer.`
   }
   if (code.startsWith('BAD_REQUEST')) {
-    return `Requête refusée par Claude — ${code.replace('BAD_REQUEST:', '').trim()}`
+    return `Requête refusée par OpenAI — ${code.replace('BAD_REQUEST:', '').trim()}`
   }
   return code
 }
@@ -387,13 +387,19 @@ function BootErrorState({ code }) {
 }
 
 function MessageBubble({ message }) {
+  if (!message?.role) return null
   const isUser = message.role === 'user'
   const text =
     typeof message.content === 'string'
       ? message.content
       : Array.isArray(message.content)
         ? message.content
-            .filter((b) => b.type === 'text')
+            .filter(
+              (b) =>
+                b.type === 'output_text' ||
+                b.type === 'input_text' ||
+                b.type === 'text',
+            )
             .map((b) => b.text)
             .join('\n')
         : ''
