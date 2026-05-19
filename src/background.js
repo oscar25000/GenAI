@@ -194,15 +194,22 @@ async function runAnalysis({ pdfBase64, pdfFilename }) {
 // ────────────────────────────────────────────────────────── conversation ──
 
 async function startConversation({ pdfUrl, projectName }) {
-  const settings = await getSettings()
-  if (!settings.apiKey) throw new Error('API_KEY_MISSING')
-
   broadcast({ type: 'epipilot:conv-status', status: 'fetching' })
   const base64 = await fetchPdfAsBase64(pdfUrl)
   const filename = pdfUrl.split('/').pop()?.split('?')[0] || 'subject.pdf'
+  await startConversationFromBase64({
+    pdfBase64: base64,
+    pdfFilename: filename,
+    projectName,
+  })
+}
+
+async function startConversationFromBase64({ pdfBase64, pdfFilename, projectName }) {
+  const settings = await getSettings()
+  if (!settings.apiKey) throw new Error('API_KEY_MISSING')
 
   const project = emptyProject(projectName)
-  project.sourcePdf = filename
+  project.sourcePdf = pdfFilename || 'subject.pdf'
 
   const firstUserMessage = `Sujet à analyser : ${projectName || 'projet Epitech'}.
 
@@ -211,16 +218,18 @@ Lis le PDF, produis un résumé clair avec set_summary, puis démarre la convers
   const conversation = {
     messages: [{ role: 'user', content: firstUserMessage }],
     project,
-    pdfBase64: base64,
-    pdfFilename: filename,
+    pdfBase64,
+    pdfFilename: pdfFilename || 'subject.pdf',
     projectName,
     status: 'thinking',
     createdAt: new Date().toISOString(),
   }
   await saveConversation(conversation)
-  broadcast({ type: 'epipilot:conv-update', conversation: conversationForBroadcast(conversation) })
+  broadcast({
+    type: 'epipilot:conv-update',
+    conversation: conversationForBroadcast(conversation),
+  })
 
-  // Fire the first turn (no user input beyond the synthetic kickoff).
   await runNextTurn({ includePdf: true })
 }
 
@@ -345,6 +354,55 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         sendResponse({ ok: true, project })
       } catch (err) {
         broadcast({ type: 'epipilot:error', code: err?.message || 'UNKNOWN' })
+        sendResponse({ ok: false, code: err?.message || 'UNKNOWN' })
+      }
+    })()
+    return true
+  }
+
+  if (msg?.type === 'epipilot:open-upload') {
+    // Stash the project name and open the dashboard. The conversation UI
+    // will read the pending upload flag and prompt for the PDF.
+    const url = chrome.runtime.getURL('dashboard.html#conversation')
+    chrome.storage.local.set({
+      epipilot_pending_upload: {
+        projectName: msg.projectName || '',
+        timestamp: Date.now(),
+      },
+    })
+    chrome.tabs.create({ url })
+    sendResponse({ ok: true })
+    return true
+  }
+
+  if (msg?.type === 'epipilot:get-pending-upload') {
+    chrome.storage.local.get(['epipilot_pending_upload'], (res) => {
+      const p = res?.epipilot_pending_upload
+      if (!p) {
+        sendResponse({ pending: null })
+        return
+      }
+      const fresh = Date.now() - (p.timestamp || 0) < 30 * 60_000
+      sendResponse({ pending: fresh ? p : null })
+    })
+    return true
+  }
+
+  if (msg?.type === 'epipilot:start-from-upload') {
+    ;(async () => {
+      try {
+        await startConversationFromBase64({
+          pdfBase64: msg.pdfBase64,
+          pdfFilename: msg.pdfFilename,
+          projectName: msg.projectName,
+        })
+        chrome.storage.local.remove(['epipilot_pending_upload'])
+        sendResponse({ ok: true })
+      } catch (err) {
+        broadcast({
+          type: 'epipilot:conv-error',
+          code: err?.message || 'UNKNOWN',
+        })
         sendResponse({ ok: false, code: err?.message || 'UNKNOWN' })
       }
     })()

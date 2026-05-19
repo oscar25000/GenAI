@@ -8,10 +8,25 @@ import {
   ArrowRight,
   RefreshCcw,
   User,
+  FileText,
+  Upload,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { Card, Pill, SectionHeader } from './ui.jsx'
 import { SECTIONS } from '../lib/projectTools.js'
+
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result
+      const base64 = String(dataUrl).split(',')[1]
+      resolve(base64)
+    }
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
 
 function sendBg(message) {
   return new Promise((resolve) => {
@@ -107,7 +122,7 @@ export default function ConversationSection({ onOpenFullDashboard }) {
   if (!conversation) {
     if (bootError) return <BootErrorState code={bootError} />
     if (progressStage) return <BootingState stage={progressStage} />
-    return <EmptyState />
+    return <UploadPrompt />
   }
 
   return (
@@ -178,22 +193,136 @@ export default function ConversationSection({ onOpenFullDashboard }) {
   )
 }
 
-function EmptyState() {
+function UploadPrompt() {
+  const [pending, setPending] = useState(null)
+  const [dragging, setDragging] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState('')
+  const fileRef = useRef(null)
+
+  useEffect(() => {
+    sendBg({ type: 'epipilot:get-pending-upload' }).then((res) => {
+      setPending(res?.pending || null)
+    })
+  }, [])
+
+  async function handleFile(file) {
+    if (!file) return
+    if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) {
+      setError('Le fichier doit être un PDF.')
+      return
+    }
+    setUploading(true)
+    setError('')
+    try {
+      const base64 = await readFileAsBase64(file)
+      const res = await sendBg({
+        type: 'epipilot:start-from-upload',
+        pdfBase64: base64,
+        pdfFilename: file.name,
+        projectName: pending?.projectName || file.name.replace(/\.pdf$/i, ''),
+      })
+      if (!res?.ok) {
+        setError(res?.code || 'Erreur inconnue.')
+        setUploading(false)
+      }
+    } catch (err) {
+      setError(err?.message || 'Lecture du PDF impossible.')
+      setUploading(false)
+    }
+  }
+
+  function onDrop(e) {
+    e.preventDefault()
+    setDragging(false)
+    const f = e.dataTransfer.files?.[0]
+    if (f) handleFile(f)
+  }
+
+  if (uploading) {
+    return (
+      <Card className="p-10 text-center max-w-xl mx-auto">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 grid place-items-center mx-auto shadow-glow mb-4 animate-pulse">
+          <Sparkles className="w-5 h-5 text-white" />
+        </div>
+        <h3 className="text-[18px] font-semibold tracking-tight mb-2">
+          PDF reçu — EpiPilot lit le sujet…
+        </h3>
+        <p className="text-[13px] text-violet-200/70 leading-relaxed flex items-center justify-center gap-2">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          Première analyse en cours
+        </p>
+      </Card>
+    )
+  }
+
   return (
-    <Card className="p-10 text-center max-w-xl mx-auto">
-      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 grid place-items-center mx-auto shadow-glow mb-4">
-        <Sparkles className="w-5 h-5 text-white" />
+    <Card className="p-10 max-w-xl mx-auto">
+      <div className="text-center mb-6">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 grid place-items-center mx-auto shadow-glow mb-4">
+          <Sparkles className="w-5 h-5 text-white" />
+        </div>
+        <h3 className="text-[20px] font-semibold tracking-tight mb-2">
+          {pending?.projectName
+            ? `Importe le sujet de ${pending.projectName}`
+            : 'Importe le PDF du sujet'}
+        </h3>
+        <p className="text-[13px] text-violet-200/70 leading-relaxed">
+          Récupère le PDF du sujet depuis my.epitech.eu et glisse-le ici.
+          EpiPilot le lit, te fait un résumé, puis te pose les bonnes questions
+          pour construire le plan.
+        </p>
       </div>
-      <h3 className="text-[18px] font-semibold tracking-tight mb-2">
-        Aucune conversation en cours
-      </h3>
-      <p className="text-[13px] text-violet-200/70 leading-relaxed">
-        Va sur{' '}
-        <code className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[12px]">
-          my.epitech.eu/projects
-        </code>{' '}
-        et clique sur le bouton « Analyser » d'une carte projet. EpiPilot lira le PDF et t'accompagnera pour bâtir le plan.
-      </p>
+
+      <div
+        onDragOver={(e) => {
+          e.preventDefault()
+          setDragging(true)
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={onDrop}
+        onClick={() => fileRef.current?.click()}
+        className={clsx(
+          'relative cursor-pointer rounded-2xl border-2 border-dashed px-6 py-10 text-center transition',
+          dragging
+            ? 'border-violet-400 bg-violet-500/10'
+            : 'border-white/10 hover:border-violet-400/40 hover:bg-white/[0.03]',
+        )}
+      >
+        <div className="flex flex-col items-center gap-3 pointer-events-none">
+          <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 grid place-items-center">
+            {dragging ? (
+              <Upload className="w-4 h-4 text-violet-300" />
+            ) : (
+              <FileText className="w-4 h-4 text-violet-300/80" />
+            )}
+          </div>
+          <div className="text-[13.5px] font-medium">
+            {dragging ? 'Dépose le PDF' : 'Glisse le PDF ici, ou clique pour sélectionner'}
+          </div>
+          <div className="text-[11px] text-violet-300/50">
+            Format accepté : PDF (jusqu'à 32 Mo)
+          </div>
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="application/pdf"
+          hidden
+          onChange={(e) => handleFile(e.target.files?.[0])}
+        />
+      </div>
+
+      {error && (
+        <div className="mt-4 rounded-xl bg-rose-500/10 border border-rose-400/30 text-rose-200 px-4 py-2.5 text-[12.5px]">
+          {error}
+        </div>
+      )}
+
+      <div className="mt-5 text-center text-[11px] text-violet-300/40">
+        Astuce : sur la page projet de my.epitech.eu, fais un clic-droit sur le
+        PDF du sujet → Enregistrer sous, puis dépose-le ici.
+      </div>
     </Card>
   )
 }

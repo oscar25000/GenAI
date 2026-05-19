@@ -786,36 +786,14 @@
   }
 
   // ──────────────────────────────────────────────── analyze click flow ──
+  // Simplest possible UX : we just open the dashboard's Conversation tab and
+  // let the user drop the PDF there. No DOM scraping, no auto-clicking on
+  // Mantine tree nodes, no presigned-URL chasing. Reliable and predictable.
   async function handleAnalyzeClick(card) {
     const name = extractProjectName(card)
-    const pdfUrl = findPdfUrl(card)
-
-    if (pdfUrl) {
-      // Direct PDF on the card — start session right away.
-      showToast('Ouverture du dashboard…')
-      try {
-        await chrome.runtime.sendMessage({
-          type: 'epipilot:start-session',
-          pdfUrl,
-          projectName: name,
-        })
-      } catch {
-        openOverlay(name)
-        showOverlayError(
-          "Le service worker ne répond pas. Recharge l'extension dans chrome://extensions.",
-        )
-      }
-      return
-    }
-
-    // No PDF on the listing card. my.epitech.eu's cards usually have no real
-    // <a href> — the SPA uses onClick handlers. We stash a "pending" flag in
-    // chrome.storage, then either follow an explicit URL or programmatically
-    // click the card to let the SPA navigate. The detail-page content
-    // script reads the flag and auto-triggers the analysis.
     try {
       await chrome.storage.local.set({
-        epipilot_pending: {
+        epipilot_pending_upload: {
           projectName: name,
           timestamp: Date.now(),
         },
@@ -823,29 +801,14 @@
     } catch {
       /* storage unavailable — best effort */
     }
-
-    const projectUrl = findProjectUrl(card)
-    if (projectUrl) {
-      showToast('Ouverture du projet…')
-      try {
-        window.location.href = new URL(projectUrl, window.location.origin).href
-      } catch {
-        window.location.href = projectUrl
-      }
-      return
-    }
-
-    // No href — simulate a click on the card so the SPA navigates itself.
-    showToast('Ouverture du projet…')
-    const clickable =
-      card.querySelector('a, button, [role="button"], [data-testid]') || card
+    showToast('Ouverture du dashboard…')
     try {
-      clickable.click()
+      await chrome.runtime.sendMessage({
+        type: 'epipilot:open-upload',
+        projectName: name,
+      })
     } catch {
-      openOverlay(name)
-      showOverlayError(
-        "Impossible d'ouvrir la page du projet. Clique sur la carte manuellement, le bouton EpiPilot s'affichera ensuite.",
-      )
+      /* SW not responding — fall through */
     }
   }
 
@@ -898,19 +861,25 @@
     fabEl.className = 'epipilot-fab'
     fabEl.innerHTML = `${ICONS.sparkles}<span>Analyser avec EpiPilot</span><span class="status">recherche du PDF…</span>`
     fabEl.addEventListener('click', async () => {
-      updateFabStatus('Recherche du PDF…')
       const name = extractProjectNameFromDetail()
-      const res = await obtainPdfUrl({ allowClick: true, projectName: name })
-      if (res?.url) {
-        triggerDetailAnalysis(res.url, name)
-      } else if (res?.deferred) {
-        updateFabStatus('Récupération du PDF…')
-        showToast(
-          'Récupération du PDF — le dashboard s\'ouvrira automatiquement.',
-        )
-      } else {
-        showToast('Aucun PDF détecté.')
-        updateFabStatus('PDF introuvable')
+      try {
+        await chrome.storage.local.set({
+          epipilot_pending_upload: {
+            projectName: name,
+            timestamp: Date.now(),
+          },
+        })
+      } catch {
+        /* ignore */
+      }
+      showToast('Ouverture du dashboard…')
+      try {
+        await chrome.runtime.sendMessage({
+          type: 'epipilot:open-upload',
+          projectName: name,
+        })
+      } catch {
+        /* ignore */
       }
     })
     document.body.appendChild(fabEl)
