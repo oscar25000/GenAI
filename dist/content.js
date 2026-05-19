@@ -459,35 +459,53 @@
     return el
   }
 
-  async function revealPdfThroughClick(root) {
-    const node = findPdfTreeNode(root)
+  function armPdfCapture(projectName, ttlSeconds = 30) {
+    return new Promise((resolve) => {
+      try {
+        chrome.runtime.sendMessage(
+          {
+            type: 'epipilot:arm-pdf-capture',
+            projectName,
+            ttlSeconds,
+          },
+          (res) => resolve(Boolean(res?.ok)),
+        )
+      } catch {
+        resolve(false)
+      }
+    })
+  }
+
+  // Returns:
+  //  { url }      — synchronous URL found, caller should trigger analysis now
+  //  { deferred } — armed background capture + clicked tree node, background
+  //                 will start the session when the navigation completes
+  //  null         — nothing to do
+  async function obtainPdfUrl({ allowClick = true, projectName = null } = {}) {
+    // 1) DOM scan (aggressive on detail page).
+    let url = findPdfUrlAggressive(document.body)
+    if (url) return { url }
+
+    // 2) Already captured by webRequest on a previous load.
+    url = await findPdfUrlFromNetwork()
+    if (url) return { url }
+
+    if (!allowClick) return null
+
+    // 3) Lazy reveal: Mantine Tree node that navigates the tab on click.
+    //    Arm the background capture FIRST so it can grab the URL even after
+    //    the navigation kills this content script.
+    const node = findPdfTreeNode(document.body)
     if (!node) return null
+
+    await armPdfCapture(projectName, 30)
     const clickable = findClickable(node)
     try {
       clickable.click()
     } catch {
       return null
     }
-    // Poll the background's webRequest cache (~5s max).
-    for (let i = 0; i < 25; i++) {
-      await new Promise((r) => setTimeout(r, 200))
-      const url = await findPdfUrlFromNetwork()
-      if (url) return url
-    }
-    return null
-  }
-
-  // Full resolution pipeline used both by the FAB and the auto-trigger.
-  async function obtainPdfUrl({ allowClick = true } = {}) {
-    let url = findPdfUrlAggressive(document.body)
-    if (url) return url
-    url = await findPdfUrlFromNetwork()
-    if (url) return url
-    if (allowClick) {
-      url = await revealPdfThroughClick(document.body)
-      if (url) return url
-    }
-    return null
+    return { deferred: true }
   }
 
   // Conservative — only matches things that ARE PDFs. Used on listing cards
@@ -881,9 +899,15 @@
     fabEl.innerHTML = `${ICONS.sparkles}<span>Analyser avec EpiPilot</span><span class="status">recherche du PDF…</span>`
     fabEl.addEventListener('click', async () => {
       updateFabStatus('Recherche du PDF…')
-      const pdfUrl = await obtainPdfUrl({ allowClick: true })
-      if (pdfUrl) {
-        triggerDetailAnalysis(pdfUrl)
+      const name = extractProjectNameFromDetail()
+      const res = await obtainPdfUrl({ allowClick: true, projectName: name })
+      if (res?.url) {
+        triggerDetailAnalysis(res.url, name)
+      } else if (res?.deferred) {
+        updateFabStatus('Récupération du PDF…')
+        showToast(
+          'Récupération du PDF — le dashboard s\'ouvrira automatiquement.',
+        )
       } else {
         showToast('Aucun PDF détecté.')
         updateFabStatus('PDF introuvable')
@@ -965,7 +989,8 @@
     ensureFab()
 
     // Quick non-clicking detection for the FAB status.
-    const quickUrl = await obtainPdfUrl({ allowClick: false })
+    const quick = await obtainPdfUrl({ allowClick: false })
+    const quickUrl = quick?.url || null
     updateFabStatus(Boolean(quickUrl))
     if (quickUrl) {
       ensureDetailButton(quickUrl)
@@ -981,10 +1006,16 @@
       u.searchParams.delete('epipilot')
       u.searchParams.delete('epipilot_name')
       window.history.replaceState({}, '', u.href)
+      const name = extractProjectNameFromDetail()
       ;(async () => {
-        const url = quickUrl || (await obtainPdfUrl({ allowClick: true }))
-        if (url) triggerDetailAnalysis(url)
-        else updateFabStatus('PDF introuvable')
+        if (quickUrl) {
+          triggerDetailAnalysis(quickUrl, name)
+        } else {
+          const r = await obtainPdfUrl({ allowClick: true, projectName: name })
+          if (r?.url) triggerDetailAnalysis(r.url, name)
+          else if (r?.deferred) updateFabStatus('Récupération du PDF…')
+          else updateFabStatus('PDF introuvable')
+        }
       })()
       return true
     }
@@ -1003,12 +1034,23 @@
         chrome.storage.local.remove(['epipilot_pending'])
         updateFabStatus('Récupération du PDF…')
         showToast('Récupération du PDF…')
-        const url = quickUrl || (await obtainPdfUrl({ allowClick: true }))
-        if (url) {
-          triggerDetailAnalysis(url, p.projectName)
+        if (quickUrl) {
+          triggerDetailAnalysis(quickUrl, p.projectName)
+          return
+        }
+        const r = await obtainPdfUrl({
+          allowClick: true,
+          projectName: p.projectName,
+        })
+        if (r?.url) {
+          triggerDetailAnalysis(r.url, p.projectName)
+        } else if (r?.deferred) {
+          showToast('Le dashboard s\'ouvrira dès que le PDF est récupéré.')
         } else {
           updateFabStatus('PDF introuvable')
-          showToast('Impossible de récupérer le PDF — clique sur le treeitem manuellement.')
+          showToast(
+            'Impossible de récupérer le PDF — clique sur le treeitem manuellement.',
+          )
         }
       })
     } catch {

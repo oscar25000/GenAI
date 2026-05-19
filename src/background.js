@@ -33,6 +33,12 @@ chrome.runtime.onInstalled.addListener(() => {
 const pdfUrlsByTab = new Map() // tabId → { url, timestamp }
 let mostRecentPdf = null // global fallback in case clicking opens a new tab
 
+// "Armed" capture: a content script told us "I'm about to trigger a PDF
+// in this tab — when it arrives, start a session." We need this because
+// my.epitech.eu navigates the current tab to the OVH PDF URL on click,
+// killing the content script before it can react.
+let armedCapture = null // { tabId, projectName, expiresAt }
+
 function recordPdfUrl(tabId, url) {
   if (tabId == null || tabId < 0) return
   const entry = { url, timestamp: Date.now() }
@@ -40,21 +46,41 @@ function recordPdfUrl(tabId, url) {
   mostRecentPdf = { ...entry, tabId }
 }
 
+function looksLikePdf(url, headers) {
+  if (/\.pdf(?:[?#]|$)/i.test(url)) return true
+  if (/filename%3D[^&]*\.pdf/i.test(url)) return true
+  const ct = headers?.find((h) => h.name.toLowerCase() === 'content-type')?.value
+  return Boolean(ct && /application\/pdf/i.test(ct))
+}
+
+function consumeArmedCapture(tabId, url) {
+  if (!armedCapture) return false
+  if (armedCapture.tabId !== tabId) return false
+  if (Date.now() > armedCapture.expiresAt) {
+    armedCapture = null
+    return false
+  }
+  const projectName = armedCapture.projectName
+  armedCapture = null
+  // Open the dashboard in a fresh tab and run the analysis.
+  const dashUrl = chrome.runtime.getURL('dashboard.html#conversation')
+  chrome.tabs.create({ url: dashUrl }, () => {
+    startConversation({ pdfUrl: url, projectName }).catch((err) => {
+      broadcast({
+        type: 'epipilot:conv-error',
+        code: err?.message || 'UNKNOWN',
+      })
+    })
+  })
+  return true
+}
+
 chrome.webRequest.onCompleted.addListener(
   (details) => {
     if (details.tabId == null || details.tabId < 0) return
-    // 1) URL ends in .pdf (with optional query/hash)
-    if (/\.pdf(?:[?#]|$)/i.test(details.url)) {
-      recordPdfUrl(details.tabId, details.url)
-      return
-    }
-    // 2) Content-Type says PDF (needs responseHeaders extra-info)
-    const ct = details.responseHeaders?.find(
-      (h) => h.name.toLowerCase() === 'content-type',
-    )?.value
-    if (ct && /application\/pdf/i.test(ct)) {
-      recordPdfUrl(details.tabId, details.url)
-    }
+    if (!looksLikePdf(details.url, details.responseHeaders)) return
+    recordPdfUrl(details.tabId, details.url)
+    consumeArmedCapture(details.tabId, details.url)
   },
   { urls: ['<all_urls>'] },
   ['responseHeaders'],
@@ -62,6 +88,7 @@ chrome.webRequest.onCompleted.addListener(
 
 chrome.tabs.onRemoved.addListener((tabId) => {
   pdfUrlsByTab.delete(tabId)
+  if (armedCapture?.tabId === tabId) armedCapture = null
 })
 
 let inflight = null
@@ -360,6 +387,27 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
   if (msg?.type === 'epipilot:analysis-status') {
     sendResponse({ inflight: Boolean(inflight) })
+    return true
+  }
+
+  if (msg?.type === 'epipilot:arm-pdf-capture') {
+    const tabId = sender?.tab?.id
+    if (tabId == null) {
+      sendResponse({ ok: false, code: 'NO_TAB' })
+      return true
+    }
+    armedCapture = {
+      tabId,
+      projectName: msg.projectName || null,
+      expiresAt: Date.now() + (msg.ttlSeconds || 30) * 1000,
+    }
+    sendResponse({ ok: true, tabId })
+    return true
+  }
+
+  if (msg?.type === 'epipilot:disarm-pdf-capture') {
+    armedCapture = null
+    sendResponse({ ok: true })
     return true
   }
 
