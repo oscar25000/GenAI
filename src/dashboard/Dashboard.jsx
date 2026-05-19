@@ -56,7 +56,6 @@ export default function Dashboard() {
       if (msg?.type === 'epipilot:done' && msg.project) {
         setProject(msg.project)
       } else if (msg?.type === 'epipilot:conv-tool' && msg.project) {
-        // Conversation incrementally updates the project state.
         setProject(msg.project)
       } else if (msg?.type === 'epipilot:conv-update' && msg.conversation?.project) {
         setProject(msg.conversation.project)
@@ -85,7 +84,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen w-full app-bg text-violet-50 flex">
+    <div className="min-h-screen w-full bg-[#f8fafc] text-slate-900 flex">
       <Sidebar current={section} onChange={setSection} project={project} />
       <main className="flex-1 min-w-0 flex flex-col">
         <TopBar
@@ -94,22 +93,14 @@ export default function Dashboard() {
           onOpenSettings={() => setSettingsOpen(true)}
         />
         <div className="flex-1 overflow-y-auto scrollbar-thin">
-          <div className="max-w-[1400px] mx-auto px-8 py-8 animate-fade-in">
+          <div className="max-w-[1100px] mx-auto px-8 py-10 animate-fade-in">
             {section === 'overview' && (
-              <OverviewSection
-                project={project}
-                team={teamWithLoad}
-                onJump={setSection}
-              />
+              <OverviewSection project={project} team={teamWithLoad} onJump={setSection} />
             )}
             {section === 'summary' && <SummarySection project={project} />}
             {section === 'warnings' && <WarningsSection project={project} />}
             {section === 'tasks' && (
-              <TasksSection
-                project={project}
-                team={teamWithLoad}
-                onUpdateTask={updateTask}
-              />
+              <TasksSection project={project} team={teamWithLoad} onUpdateTask={updateTask} />
             )}
             {section === 'planning' && <PlanningSection project={project} />}
             {section === 'team' && (
@@ -117,25 +108,17 @@ export default function Dashboard() {
             )}
             {section === 'risks' && <RisksSection project={project} />}
             {section === 'checklist' && (
-              <ChecklistSection
-                project={project}
-                onToggle={toggleChecklist}
-              />
+              <ChecklistSection project={project} onToggle={toggleChecklist} />
             )}
             {section === 'export' && <ExportSection project={project} />}
             {section === 'conversation' && (
-              <ConversationSection
-                onOpenFullDashboard={() => setSection('overview')}
-              />
+              <ConversationSection onOpenFullDashboard={() => setSection('overview')} />
             )}
           </div>
         </div>
       </main>
 
-      <SettingsModal
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-      />
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   )
 }

@@ -1,8 +1,8 @@
-import { Search, Command, Bell, RefreshCw, FileText, Settings } from 'lucide-react'
+import { Search, Command, FileText, Settings } from 'lucide-react'
 
 const SECTION_TITLES = {
   conversation: 'Conversation guidée',
-  overview: 'Vue d\'ensemble',
+  overview: "Vue d'ensemble",
   summary: 'Résumé du projet',
   warnings: 'À ne pas oublier',
   tasks: 'Tâches',
@@ -14,54 +14,47 @@ const SECTION_TITLES = {
 }
 
 export default function TopBar({ project, section, onOpenSettings }) {
-  const formattedDeadline = new Date(project.deadline).toLocaleDateString(
-    'fr-FR',
-    { day: '2-digit', month: 'short', year: 'numeric' },
-  )
+  const formattedDeadline = new Date(project.deadline).toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
 
   return (
-    <div className="sticky top-0 z-10 backdrop-blur-xl bg-ink-950/60 border-b border-white/5">
-      <div className="max-w-[1400px] mx-auto px-8 py-4 flex items-center gap-4">
+    <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-sm border-b border-slate-100">
+      <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center gap-4">
         <div className="min-w-0">
-          <div className="text-[11px] uppercase tracking-wider text-violet-300/60">
-            {project.name} · sujet analysé
-          </div>
-          <div className="text-[17px] font-semibold tracking-tight truncate">
+          <div className="text-[11px] font-medium text-slate-400">{project.name}</div>
+          <div className="text-[15px] font-bold text-slate-900 truncate">
             {SECTION_TITLES[section] || 'Dashboard'}
           </div>
         </div>
 
-        <div className="flex-1 max-w-md mx-auto hidden md:flex">
-          <div className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-[12px] text-violet-200/60">
-            <Search className="w-3.5 h-3.5" />
-            <span className="flex-1">Rechercher tâche, livrable, membre…</span>
-            <span className="flex items-center gap-1 text-[10px] text-violet-200/40">
-              <Command className="w-3 h-3" /> K
+        <div className="flex-1 max-w-sm mx-auto hidden md:flex">
+          <div className="w-full flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 text-[12px] text-slate-400 cursor-default">
+            <Search className="w-3.5 h-3.5 shrink-0" />
+            <span className="flex-1">Rechercher…</span>
+            <span className="flex items-center gap-0.5 text-[10px] text-slate-300">
+              <Command className="w-3 h-3" />K
             </span>
           </div>
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          <div className="hidden sm:flex items-center gap-2 text-[11px] text-violet-300/70 px-3 py-2 rounded-xl bg-white/5 border border-white/10">
-            <FileText className="w-3.5 h-3.5" />
-            <span className="truncate max-w-[160px]">{project.sourcePdf}</span>
+          <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-slate-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse-dot" />
+            {formattedDeadline}
           </div>
-          <div className="hidden sm:flex items-center gap-2 text-[11px] text-violet-300/70 px-3 py-2 rounded-xl bg-white/5 border border-white/10">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-dot" />
-            Deadline {formattedDeadline}
+          <div className="hidden sm:flex items-center gap-1 text-[11px] text-slate-400 truncate max-w-[130px]">
+            <FileText className="w-3.5 h-3.5 shrink-0 text-slate-300" />
+            <span className="truncate">{project.sourcePdf}</span>
           </div>
-          <button className="p-2 rounded-xl bg-white/5 border border-white/10 hover:border-violet-400/40 transition">
-            <RefreshCw className="w-3.5 h-3.5 text-violet-200" />
-          </button>
-          <button className="p-2 rounded-xl bg-white/5 border border-white/10 hover:border-violet-400/40 transition">
-            <Bell className="w-3.5 h-3.5 text-violet-200" />
-          </button>
           <button
             onClick={onOpenSettings}
-            className="p-2 rounded-xl bg-white/5 border border-white/10 hover:border-violet-400/40 transition"
+            className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
             title="Paramètres"
           >
-            <Settings className="w-3.5 h-3.5 text-violet-200" />
+            <Settings className="w-4 h-4" />
           </button>
         </div>
       </div>
