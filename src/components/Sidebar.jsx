@@ -30,7 +30,11 @@ export default function Sidebar({ current, onChange, project }) {
     <aside className="w-[210px] shrink-0 border-r border-slate-100 bg-white flex flex-col">
       <div className="px-4 pt-5 pb-4">
         <div className="leading-tight">
-          <div className="text-[15px] font-bold text-slate-900 tracking-tight">Epilot</div>
+          <img
+            src="/icons/logo.png"
+            alt="Epilot"
+            className="h-14 w-auto max-w-[170px] object-contain object-left"
+          />
           <div className="text-[11px] text-slate-400">Gestion de projet</div>
         </div>
       </div>

@@ -6,13 +6,25 @@
   "description": "Transforme ton sujet Epitech en plan de projet clair, organisé et prêt à exécuter.",
   "action": {
     "default_title": "Epilot",
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
   },
   "background": {
     "service_worker": "background.js",
     "type": "module"
   },
-  "permissions": ["storage", "tabs", "cookies", "webRequest"],
+  "permissions": ["storage", "tabs", "cookies", "webRequest", "identity"],
   "host_permissions": [
     "https://intra.epitech.eu/*",
     "https://my.epitech.eu/*",
@@ -23,7 +35,8 @@
     "https://*.googleusercontent.com/*",
     "https://*.cloudfront.net/*",
     "https://*.azureedge.net/*",
-    "https://*.blob.core.windows.net/*"
+    "https://*.blob.core.windows.net/*",
+    "http://localhost:3001/*"
   ],
   "content_scripts": [
     {
@@ -38,7 +51,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["dashboard.html", "assets/*"],
+      "resources": ["dashboard.html", "assets/*", "icons/*"],
       "matches": ["<all_urls>"]
     }
   ]

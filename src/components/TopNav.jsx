@@ -1,4 +1,4 @@
-import { Sparkles, Settings } from 'lucide-react'
+import { Settings } from 'lucide-react'
 import clsx from 'clsx'
 
 const ITEMS = [
@@ -19,10 +19,7 @@ export default function TopNav({ current, onChange, project, onOpenSettings }) {
     <header className="sticky top-0 z-20 bg-white border-b border-slate-100">
       <div className="px-6 flex items-center gap-0 h-14">
         <div className="flex items-center gap-2.5 mr-8 shrink-0">
-          <div className="w-7 h-7 rounded-xl bg-indigo-600 grid place-items-center">
-            <Sparkles className="w-3.5 h-3.5 text-white" />
-          </div>
-          <span className="text-[14px] font-bold text-slate-900">Epilot</span>
+          <img src="/icons/logo.png" alt="Epilot" className="h-10 w-auto max-w-[140px] object-contain object-left" />
         </div>
 
         <nav className="flex items-center gap-1 flex-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>

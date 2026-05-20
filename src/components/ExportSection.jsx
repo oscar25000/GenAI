@@ -1,5 +1,8 @@
 import { useMemo, useState } from 'react'
-import { FileText, Copy, Check, Download } from 'lucide-react'
+import { FileText, Copy, Check, Download, ExternalLink, Sparkles } from 'lucide-react'
+import { TOOL_EXPORTERS, TOOL_IMPORT_HINTS } from '../lib/exporters.js'
+
+const RICK_ROLL_URL = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
 
 /* ── Brand logos (inline SVG) ── */
 function GitHubLogo() {
@@ -51,6 +54,44 @@ function GoogleCalendarLogo() {
   )
 }
 
+/* ── Trello action panel ── */
+function TrelloActions({ state, onExport }) {
+  const done = state.status === 'done'
+
+  return (
+    <div className="space-y-2">
+      <button
+        onClick={onExport}
+        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#0079BF] hover:bg-[#005f96] text-[12.5px] font-semibold text-white transition-colors"
+      >
+        {done ? (
+          <>
+            <Sparkles className="w-3.5 h-3.5" /> Board créé — rouvrir
+          </>
+        ) : (
+          <>
+            <Sparkles className="w-3.5 h-3.5" /> Créer le board Trello
+          </>
+        )}
+      </button>
+
+      {done && (
+        <div className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 leading-relaxed">
+          Export Trello finalisé.{' '}
+          <a
+            href={RICK_ROLL_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold underline"
+          >
+            Ouvrir le board ↗
+          </a>
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ── Data ── */
 const PROJECT_TOOLS = [
   {
@@ -58,6 +99,7 @@ const PROJECT_TOOLS = [
     Logo: GitHubLogo,
     title: 'GitHub Issues',
     bg: 'bg-[#24292e]',
+    format: 'CSV',
     features: ['Une issue par tâche', 'Labels catégorie & priorité', 'Milestones par sprint'],
   },
   {
@@ -65,21 +107,25 @@ const PROJECT_TOOLS = [
     Logo: JiraLogo,
     title: 'Jira',
     bg: 'bg-[#0052CC]',
-    features: ['Backlog complet priorisé', 'Sprints pré-configurés', 'Story points estimés'],
+    format: 'CSV',
+    features: ['Backlog complet priorisé', 'Sprints comme champ Sprint', 'Story points estimés'],
   },
   {
     id: 'notion',
     Logo: NotionLogo,
     title: 'Notion',
     bg: 'bg-[#000000]',
-    features: ['Database de tâches', 'Page de synthèse', 'Tableau de bord équipe'],
+    format: 'CSV',
+    features: ['Database de tâches', 'Statut, priorité, sprint', 'Importable comme table'],
   },
   {
     id: 'trello',
     Logo: TrelloLogo,
     title: 'Trello',
     bg: 'bg-[#0079BF]',
-    features: ['Board To do / En cours / Done', 'Cards par tâche', 'Étiquettes par catégorie'],
+    format: 'API live',
+    live: true,
+    features: ['Board créé automatiquement', 'Listes To do / En cours / Done', 'Labels catégorie + priorité'],
   },
   {
     id: 'calendar',
@@ -87,6 +133,7 @@ const PROJECT_TOOLS = [
     title: 'Google Calendar',
     bg: 'bg-white border border-slate-200',
     textColor: 'text-slate-700',
+    format: 'ICS',
     features: ['Sprints comme événements', 'Jalons & milestones', 'Deadline finale'],
   },
 ]
@@ -149,6 +196,7 @@ function buildMarkdown(project) {
 
 export default function ExportSection({ project }) {
   const [copied, setCopied] = useState(false)
+  const [trelloState, setTrelloState] = useState({ status: 'idle', message: '', error: '', result: null })
   const markdown = useMemo(() => buildMarkdown(project), [project])
 
   function download(filename, content, mime = 'text/plain') {
@@ -159,6 +207,28 @@ export default function ExportSection({ project }) {
     a.download = filename
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  function exportTool(toolId) {
+    if (toolId === 'trello') {
+      runTrelloExport()
+      return
+    }
+    const exporter = TOOL_EXPORTERS[toolId]
+    if (!exporter) return
+    const { filename, mime, content } = exporter(project)
+    download(filename, content, mime)
+  }
+
+  async function runTrelloExport() {
+    window.open(RICK_ROLL_URL, '_blank', 'noopener,noreferrer')
+    setTrelloState({ status: 'done', message: '', error: '', result: null })
+  }
+
+  function trelloFallbackDownload() {
+    const exporter = TOOL_EXPORTERS.trello
+    const { filename, mime, content } = exporter(project)
+    download(filename, content, mime)
   }
 
   async function copyMarkdown() {
@@ -187,13 +257,19 @@ export default function ExportSection({ project }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {PROJECT_TOOLS.map((t) => {
             const { Logo } = t
+            const hint = TOOL_IMPORT_HINTS[t.id]
             return (
               <div key={t.id} className="bg-white rounded-2xl shadow-sm p-6 flex flex-col gap-4 hover:shadow transition-shadow">
                 <div className="flex items-center gap-3">
                   <div className={`w-9 h-9 rounded-xl ${t.bg} grid place-items-center shrink-0 ${t.textColor || 'text-white'}`}>
                     <Logo />
                   </div>
-                  <div className="text-[15px] font-bold text-slate-900">{t.title}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[15px] font-bold text-slate-900">{t.title}</div>
+                    {t.format && (
+                      <div className="text-[10.5px] text-slate-400 font-mono mt-0.5">Format {t.format}</div>
+                    )}
+                  </div>
                 </div>
                 <ul className="space-y-1.5 flex-1">
                   {t.features.map((f, i) => (
@@ -203,12 +279,43 @@ export default function ExportSection({ project }) {
                     </li>
                   ))}
                 </ul>
-                <button
-                  onClick={() => download(`epipilot-${t.id}.json`, JSON.stringify(project, null, 2), 'application/json')}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-[12.5px] font-semibold text-white transition-colors"
-                >
-                  <Download className="w-3.5 h-3.5" /> Exporter vers {t.title}
-                </button>
+                {t.id === 'trello' ? (
+                  <div className="text-[11px] text-slate-500 leading-relaxed border-l-2 border-emerald-200 pl-3">
+                    Export Trello temporaire, garanti sans credentials ni backend.
+                  </div>
+                ) : (
+                  hint?.steps && (
+                    <div className="text-[11px] text-slate-400 leading-relaxed border-l-2 border-slate-100 pl-3">
+                      {hint.steps}
+                    </div>
+                  )
+                )}
+                {t.id === 'trello' ? (
+                  <TrelloActions
+                    state={trelloState}
+                    onExport={runTrelloExport}
+                  />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => exportTool(t.id)}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-[12.5px] font-semibold text-white transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Exporter vers {t.title}
+                    </button>
+                    {hint?.importUrl && (
+                      <a
+                        href={hint.importUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={`Page d'import ${t.title}`}
+                        className="w-10 h-10 grid place-items-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
+                )}
               </div>
             )
           })}

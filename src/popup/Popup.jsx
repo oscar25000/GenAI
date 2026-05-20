@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  Sparkles,
   FileText,
   Upload,
   ArrowUpRight,
@@ -179,11 +178,8 @@ export default function Popup() {
       {/* Header */}
       <header className="flex items-center justify-between bg-white rounded-2xl shadow-sm px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-xl bg-indigo-600 grid place-items-center shrink-0">
-            <Sparkles className="w-3.5 h-3.5 text-white" />
-          </div>
           <div className="leading-tight">
-            <div className="text-[13px] font-bold text-slate-900">Epilot</div>
+            <img src="/icons/logo.png" alt="Epilot" className="h-10 w-auto max-w-[130px] object-contain object-left" />
             <div className="text-[10px] text-slate-400">Gestion de projet</div>
           </div>
         </div>

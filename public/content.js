@@ -174,6 +174,7 @@
   box-shadow: 0 0 28px -4px rgba(130, 87, 255, 0.7);
 }
 .epilot-overlay-logo svg { width: 16px; height: 16px; color: white; }
+.epilot-overlay-logo img { width: 24px; height: 24px; object-fit: contain; }
 .epilot-overlay h3 {
   margin: 0;
   font-size: 15px;
@@ -332,6 +333,7 @@
     close:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
   }
+  const LOGO_ICON_URL = chrome.runtime.getURL('icons/icon-32.png')
 
   // ─────────────────────────────────────────── card detection heuristics ──
   const CARD_SELECTORS = [
@@ -399,12 +401,15 @@
   // Ask the background SW for any PDF URL it captured on this tab via
   // chrome.webRequest. This is the reliable fallback when the page uses a
   // custom PDF viewer that doesn't expose URLs in the DOM.
-  function findPdfUrlFromNetwork() {
+  function findPdfUrlFromNetwork({ sameTabOnly = false } = {}) {
     return new Promise((resolve) => {
       try {
-        chrome.runtime.sendMessage({ type: 'epipilot:find-pdf' }, (res) => {
-          resolve(res?.pdfUrl || null)
-        })
+        chrome.runtime.sendMessage(
+          { type: 'epipilot:find-pdf', sameTabOnly },
+          (res) => {
+            resolve(res?.pdfUrl || null)
+          },
+        )
       } catch {
         resolve(null)
       }
@@ -445,6 +450,11 @@
   }
 
   function findClickable(el) {
+    const childTarget = el.querySelector?.(
+      'button, a, [role="button"], span, [class*="label" i], [class*="node" i]',
+    )
+    if (childTarget) return childTarget
+
     let cur = el
     for (let i = 0; cur && i < 6; i++) {
       if (
@@ -459,7 +469,20 @@
     return el
   }
 
-  function armPdfCapture(projectName, ttlSeconds = 30) {
+  function clickLikeUser(el) {
+    const opts = {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+    }
+    el.dispatchEvent(new PointerEvent('pointerdown', opts))
+    el.dispatchEvent(new MouseEvent('mousedown', opts))
+    el.dispatchEvent(new PointerEvent('pointerup', opts))
+    el.dispatchEvent(new MouseEvent('mouseup', opts))
+    el.dispatchEvent(new MouseEvent('click', opts))
+  }
+
+  function armPdfCapture(projectName, ttlSeconds = 30, options = {}) {
     return new Promise((resolve) => {
       try {
         chrome.runtime.sendMessage(
@@ -467,6 +490,8 @@
             type: 'epipilot:arm-pdf-capture',
             projectName,
             ttlSeconds,
+            openDashboard: options.openDashboard !== false,
+            closeSourceTab: Boolean(options.closeSourceTab),
           },
           (res) => resolve(Boolean(res?.ok)),
         )
@@ -481,13 +506,18 @@
   //  { deferred } — armed background capture + clicked tree node, background
   //                 will start the session when the navigation completes
   //  null         — nothing to do
-  async function obtainPdfUrl({ allowClick = true, projectName = null } = {}) {
+  async function obtainPdfUrl({
+    allowClick = true,
+    projectName = null,
+    captureOptions = {},
+    sameTabPdfOnly = false,
+  } = {}) {
     // 1) DOM scan (aggressive on detail page).
     let url = findPdfUrlAggressive(document.body)
     if (url) return { url }
 
     // 2) Already captured by webRequest on a previous load.
-    url = await findPdfUrlFromNetwork()
+    url = await findPdfUrlFromNetwork({ sameTabOnly: sameTabPdfOnly })
     if (url) return { url }
 
     if (!allowClick) return null
@@ -498,12 +528,16 @@
     const node = findPdfTreeNode(document.body)
     if (!node) return null
 
-    await armPdfCapture(projectName, 30)
+    await armPdfCapture(projectName, 30, captureOptions)
     const clickable = findClickable(node)
     try {
-      clickable.click()
+      clickLikeUser(clickable)
     } catch {
-      return null
+      try {
+        clickable.click()
+      } catch {
+        return null
+      }
     }
     return { deferred: true }
   }
@@ -680,6 +714,14 @@
     }, 3000)
   }
 
+  function openDashboardDirect(hash = '#conversation') {
+    const url = `${chrome.runtime.getURL('dashboard.html')}${hash}`
+    const opened = window.open(url, '_blank')
+    if (!opened) {
+      window.location.href = url
+    }
+  }
+
   // ─────────────────────────────────────────────────── overlay state ──
   let currentOverlay = null
   let currentStep = 0
@@ -704,7 +746,7 @@
     backdrop.innerHTML = `
       <div class="epipilot-overlay" role="dialog" aria-modal="true">
         <div class="epipilot-overlay-header">
-          <div class="epipilot-overlay-logo">${ICONS.sparkles}</div>
+          <div class="epipilot-overlay-logo"><img src="${LOGO_ICON_URL}" alt="Epilot" /></div>
           <div>
             <h3>Analyse en cours</h3>
             <p class="sub">EpiPilot · OpenAI</p>
@@ -786,11 +828,29 @@
   }
 
   // ──────────────────────────────────────────────── analyze click flow ──
-  // Simplest possible UX : we just open the dashboard's Conversation tab and
-  // let the user drop the PDF there. No DOM scraping, no auto-clicking on
-  // Mantine tree nodes, no presigned-URL chasing. Reliable and predictable.
+  // Listing UX: open the dashboard immediately, then let a hidden helper tab
+  // visit the project page, click the generated PDF tree item, and let the
+  // background webRequest listener capture the one-time PDF URL.
   async function handleAnalyzeClick(card) {
     const name = extractProjectName(card)
+    const projectUrl = findProjectUrl(card)
+
+    if (projectUrl) {
+      showToast('Ouverture du dashboard…')
+      openDashboardDirect()
+      try {
+        const res = await chrome.runtime.sendMessage({
+          type: 'epipilot:start-from-project-page',
+          projectUrl,
+          projectName: name,
+          openDashboard: false,
+        })
+        if (res?.ok) return
+      } catch {
+        /* SW not responding — fall back to manual upload */
+      }
+    }
+
     try {
       await chrome.storage.local.set({
         epipilot_pending_upload: {
@@ -802,10 +862,12 @@
       /* storage unavailable — best effort */
     }
     showToast('Ouverture du dashboard…')
+    openDashboardDirect()
     try {
       await chrome.runtime.sendMessage({
         type: 'epipilot:open-upload',
         projectName: name,
+        openDashboard: false,
       })
     } catch {
       /* SW not responding — fall through */
@@ -862,24 +924,35 @@
     fabEl.innerHTML = `${ICONS.sparkles}<span>Analyser avec EpiPilot</span><span class="status">recherche du PDF…</span>`
     fabEl.addEventListener('click', async () => {
       const name = extractProjectNameFromDetail()
-      try {
-        await chrome.storage.local.set({
-          epipilot_pending_upload: {
-            projectName: name,
-            timestamp: Date.now(),
-          },
-        })
-      } catch {
-        /* ignore */
-      }
+      updateFabStatus('Récupération du PDF…')
       showToast('Ouverture du dashboard…')
       try {
         await chrome.runtime.sendMessage({
-          type: 'epipilot:open-upload',
+          type: 'epipilot:prepare-dashboard',
           projectName: name,
         })
       } catch {
-        /* ignore */
+        updateFabStatus('Erreur dashboard')
+        return
+      }
+
+      const result = await obtainPdfUrl({
+        allowClick: true,
+        projectName: name,
+        captureOptions: { openDashboard: false },
+        sameTabPdfOnly: true,
+      })
+      if (result?.url) {
+        triggerDetailAnalysis(result.url, name, { openDashboard: false })
+      } else if (result?.deferred) {
+        updateFabStatus('PDF capturé…')
+      } else {
+        updateFabStatus('PDF introuvable')
+        chrome.runtime.sendMessage({
+          type: 'epipilot:session-error',
+          code: 'PDF_NOT_FOUND',
+          projectName: name,
+        }).catch(() => {})
       }
     })
     document.body.appendChild(fabEl)
@@ -937,20 +1010,31 @@
     showToast('Projet détecté — clique sur Analyser ou attends l\'auto-lancement')
   }
 
-  async function triggerDetailAnalysis(pdfUrl, providedName) {
+  async function triggerDetailAnalysis(pdfUrl, providedName, options = {}) {
     const name = providedName || extractProjectNameFromDetail()
-    showToast('Ouverture du dashboard…')
+    showToast(options.openDashboard === false ? 'Analyse lancée dans le dashboard…' : 'Ouverture du dashboard…')
     try {
       await chrome.runtime.sendMessage({
-        type: 'epipilot:start-session',
+        type:
+          options.openDashboard === false
+            ? 'epipilot:start-session-existing-dashboard'
+            : 'epipilot:start-session',
         pdfUrl,
         projectName: name,
+        closeSourceTab: Boolean(options.closeSourceTab),
       })
     } catch {
-      openOverlay(name)
-      showOverlayError(
-        "Le service worker ne répond pas. Recharge l'extension.",
-      )
+      if (options.openDashboard === false) {
+        chrome.runtime.sendMessage({
+          type: 'epipilot:session-error',
+          code: 'BACKGROUND_UNAVAILABLE',
+        }).catch(() => {})
+      } else {
+        openOverlay(name)
+        showOverlayError(
+          "Le service worker ne répond pas. Recharge l'extension.",
+        )
+      }
     }
   }
 
@@ -958,7 +1042,7 @@
     ensureFab()
 
     // Quick non-clicking detection for the FAB status.
-    const quick = await obtainPdfUrl({ allowClick: false })
+    const quick = await obtainPdfUrl({ allowClick: false, sameTabPdfOnly: true })
     const quickUrl = quick?.url || null
     updateFabStatus(Boolean(quickUrl))
     if (quickUrl) {
@@ -968,22 +1052,44 @@
     if (autoTriggered) return Boolean(quickUrl)
 
     // URL-param trigger (legacy).
-    const autoParam = new URLSearchParams(window.location.search).get('epipilot')
+    const params = new URLSearchParams(window.location.search)
+    const autoParam = params.get('epipilot')
     if (autoParam === 'auto') {
       autoTriggered = true
+      const useExistingDashboard = params.get('epipilot_dashboard') === 'existing'
+      const closeSourceTab = params.get('epipilot_close') === '1'
       const u = new URL(window.location.href)
       u.searchParams.delete('epipilot')
       u.searchParams.delete('epipilot_name')
+      u.searchParams.delete('epipilot_dashboard')
+      u.searchParams.delete('epipilot_close')
       window.history.replaceState({}, '', u.href)
       const name = extractProjectNameFromDetail()
+      const analysisOptions = {
+        openDashboard: !useExistingDashboard,
+        closeSourceTab,
+      }
       ;(async () => {
         if (quickUrl) {
-          triggerDetailAnalysis(quickUrl, name)
+          triggerDetailAnalysis(quickUrl, name, analysisOptions)
         } else {
-          const r = await obtainPdfUrl({ allowClick: true, projectName: name })
-          if (r?.url) triggerDetailAnalysis(r.url, name)
+          const r = await obtainPdfUrl({
+            allowClick: true,
+            projectName: name,
+            captureOptions: analysisOptions,
+            sameTabPdfOnly: true,
+          })
+          if (r?.url) triggerDetailAnalysis(r.url, name, analysisOptions)
           else if (r?.deferred) updateFabStatus('Récupération du PDF…')
-          else updateFabStatus('PDF introuvable')
+          else {
+            updateFabStatus('PDF introuvable')
+            if (useExistingDashboard) {
+              chrome.runtime.sendMessage({
+                type: 'epipilot:session-error',
+                code: 'PDF_NOT_FOUND',
+              }).catch(() => {})
+            }
+          }
         }
       })()
       return true
@@ -1003,20 +1109,32 @@
         chrome.storage.local.remove(['epipilot_pending'])
         updateFabStatus('Récupération du PDF…')
         showToast('Récupération du PDF…')
+        const analysisOptions = {
+          openDashboard: p.openDashboard !== false,
+          closeSourceTab: Boolean(p.closeSourceTab),
+        }
         if (quickUrl) {
-          triggerDetailAnalysis(quickUrl, p.projectName)
+          triggerDetailAnalysis(quickUrl, p.projectName, analysisOptions)
           return
         }
         const r = await obtainPdfUrl({
           allowClick: true,
           projectName: p.projectName,
+          captureOptions: analysisOptions,
+          sameTabPdfOnly: true,
         })
         if (r?.url) {
-          triggerDetailAnalysis(r.url, p.projectName)
+          triggerDetailAnalysis(r.url, p.projectName, analysisOptions)
         } else if (r?.deferred) {
           showToast('Le dashboard s\'ouvrira dès que le PDF est récupéré.')
         } else {
           updateFabStatus('PDF introuvable')
+          if (p.openDashboard === false) {
+            chrome.runtime.sendMessage({
+              type: 'epipilot:session-error',
+              code: 'PDF_NOT_FOUND',
+            }).catch(() => {})
+          }
           showToast(
             'Impossible de récupérer le PDF — clique sur le treeitem manuellement.',
           )

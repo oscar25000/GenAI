@@ -37,7 +37,7 @@ let mostRecentPdf = null // global fallback in case clicking opens a new tab
 // in this tab — when it arrives, start a session." We need this because
 // my.epitech.eu navigates the current tab to the OVH PDF URL on click,
 // killing the content script before it can react.
-let armedCapture = null // { tabId, projectName, expiresAt }
+let armedCapture = null // { tabId, projectName, expiresAt, openDashboard, closeSourceTab }
 
 function recordPdfUrl(tabId, url) {
   if (tabId == null || tabId < 0) return
@@ -61,17 +61,28 @@ function consumeArmedCapture(tabId, url) {
     return false
   }
   const projectName = armedCapture.projectName
+  const openDashboard = armedCapture.openDashboard !== false
+  const closeSourceTab = Boolean(armedCapture.closeSourceTab)
   armedCapture = null
-  // Open the dashboard in a fresh tab and run the analysis.
-  const dashUrl = chrome.runtime.getURL('dashboard.html#conversation')
-  chrome.tabs.create({ url: dashUrl }, () => {
+
+  const start = () => {
     startConversation({ pdfUrl: url, projectName }).catch((err) => {
       broadcast({
         type: 'epipilot:conv-error',
         code: err?.message || 'UNKNOWN',
       })
     })
-  })
+  }
+
+  if (openDashboard) {
+    chrome.tabs.create({ url: dashboardConversationUrl() }, start)
+  } else {
+    start()
+  }
+
+  if (closeSourceTab) {
+    removeTabQuietly(tabId)
+  }
   return true
 }
 
@@ -95,6 +106,15 @@ let inflight = null
 
 function broadcast(message) {
   chrome.runtime.sendMessage(message).catch(() => {})
+}
+
+function removeTabQuietly(tabId) {
+  try {
+    const result = chrome.tabs.remove(tabId)
+    if (result?.catch) result.catch(() => {})
+  } catch {
+    /* ignore */
+  }
 }
 
 function arrayBufferToBase64(buffer) {
@@ -200,6 +220,50 @@ async function startConversation({ pdfUrl, projectName }) {
     pdfBase64: base64,
     pdfFilename: filename,
     projectName,
+  })
+}
+
+async function prepareConversationForPdfLookup(projectName) {
+  const project = emptyProject(projectName)
+  const conversation = {
+    version: 2,
+    messages: [],
+    project,
+    pdfBase64: '',
+    pdfFilename: '',
+    projectName,
+    status: 'thinking',
+    createdAt: new Date().toISOString(),
+    pendingSource: 'project-page',
+  }
+  await saveConversation(conversation)
+  broadcast({
+    type: 'epipilot:conv-update',
+    conversation: conversationForBroadcast(conversation),
+  })
+}
+
+function withAutoPdfParams(projectUrl, projectName) {
+  const url = new URL(projectUrl)
+  url.searchParams.set('epipilot', 'auto')
+  url.searchParams.set('epipilot_dashboard', 'existing')
+  url.searchParams.set('epipilot_close', '1')
+  if (projectName) url.searchParams.set('epipilot_name', projectName)
+  return url.href
+}
+
+function dashboardConversationUrl() {
+  return `${chrome.runtime.getURL('dashboard.html')}#conversation`
+}
+
+function setProjectPageAutoStart(projectName, options = {}) {
+  return chrome.storage.local.set({
+    epipilot_pending: {
+      projectName,
+      timestamp: Date.now(),
+      openDashboard: options.openDashboard !== false,
+      closeSourceTab: Boolean(options.closeSourceTab),
+    },
   })
 }
 
@@ -363,15 +427,59 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.type === 'epipilot:open-upload') {
     // Stash the project name and open the dashboard. The conversation UI
     // will read the pending upload flag and prompt for the PDF.
-    const url = chrome.runtime.getURL('dashboard.html#conversation')
+    const url = dashboardConversationUrl()
     chrome.storage.local.set({
       epipilot_pending_upload: {
         projectName: msg.projectName || '',
         timestamp: Date.now(),
       },
     })
-    chrome.tabs.create({ url })
+    if (msg.openDashboard !== false) chrome.tabs.create({ url })
     sendResponse({ ok: true })
+    return true
+  }
+
+  if (msg?.type === 'epipilot:prepare-dashboard') {
+    ;(async () => {
+      try {
+        await prepareConversationForPdfLookup(msg.projectName || 'Projet Epitech')
+        if (msg.openDashboard !== false) {
+          chrome.tabs.create({ url: dashboardConversationUrl() })
+        }
+        sendResponse({ ok: true })
+      } catch (err) {
+        sendResponse({ ok: false, code: err?.message || 'UNKNOWN' })
+      }
+    })()
+    return true
+  }
+
+  if (msg?.type === 'epipilot:start-from-project-page') {
+    ;(async () => {
+      try {
+        const projectName = msg.projectName || 'Projet Epitech'
+        if (!msg.projectUrl) throw new Error('PROJECT_URL_MISSING')
+        await prepareConversationForPdfLookup(projectName)
+        await setProjectPageAutoStart(projectName, {
+          openDashboard: false,
+          closeSourceTab: true,
+        })
+        if (msg.openDashboard !== false) {
+          chrome.tabs.create({ url: dashboardConversationUrl() })
+        }
+        chrome.tabs.create({
+          url: msg.projectUrl,
+          active: false,
+        })
+        sendResponse({ ok: true })
+      } catch (err) {
+        broadcast({
+          type: 'epipilot:conv-error',
+          code: err?.message || 'UNKNOWN',
+        })
+        sendResponse({ ok: false, code: err?.message || 'UNKNOWN' })
+      }
+    })()
     return true
   }
 
@@ -412,7 +520,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.type === 'epipilot:start-session') {
     // Content script kicked off — open the dashboard immediately, then begin
     // the conversation in the background.
-    const url = chrome.runtime.getURL('dashboard.html#conversation')
+    const url = dashboardConversationUrl()
     chrome.tabs.create({ url }, () => {
       startConversation({ pdfUrl: msg.pdfUrl, projectName: msg.projectName }).catch(
         (err) => {
@@ -421,6 +529,41 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       )
     })
     sendResponse({ ok: true })
+    return true
+  }
+
+  if (msg?.type === 'epipilot:start-session-existing-dashboard') {
+    const sourceTabId = sender?.tab?.id
+    startConversation({ pdfUrl: msg.pdfUrl, projectName: msg.projectName })
+      .then(() => {
+        if (msg.closeSourceTab && sourceTabId != null) {
+          removeTabQuietly(sourceTabId)
+        }
+      })
+      .catch((err) => {
+        broadcast({ type: 'epipilot:conv-error', code: err?.message || 'UNKNOWN' })
+      })
+    sendResponse({ ok: true })
+    return true
+  }
+
+  if (msg?.type === 'epipilot:session-error') {
+    ;(async () => {
+      const conv = await getConversation()
+      if (conv) {
+        conv.status = 'error'
+        conv.lastError = msg.code || 'UNKNOWN'
+        await saveConversation(conv)
+        broadcast({
+          type: 'epipilot:conv-error',
+          code: conv.lastError,
+          conversation: conversationForBroadcast(conv),
+        })
+      } else {
+        broadcast({ type: 'epipilot:conv-error', code: msg.code || 'UNKNOWN' })
+      }
+      sendResponse({ ok: true })
+    })()
     return true
   }
 
@@ -458,6 +601,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       tabId,
       projectName: msg.projectName || null,
       expiresAt: Date.now() + (msg.ttlSeconds || 30) * 1000,
+      openDashboard: msg.openDashboard !== false,
+      closeSourceTab: Boolean(msg.closeSourceTab),
     }
     sendResponse({ ok: true, tabId })
     return true
@@ -478,6 +623,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         timestamp: tabEntry.timestamp,
         source: 'tab',
       })
+      return true
+    }
+    if (msg.sameTabOnly) {
+      sendResponse({ pdfUrl: null })
       return true
     }
     // Cross-tab fallback (clicking the tree node might open a new tab).
