@@ -90,6 +90,11 @@ export default function ConversationSection({ onOpenFullDashboard }) {
   const project = conversation?.project
   const status = conversation?.status || 'idle'
   const thinking = status === 'thinking' || progressStage !== ''
+  const thinkingStage =
+    progressStage ||
+    (conversation?.pendingSource === 'project-page'
+      ? 'Recherche du PDF sur my.epitech.eu…'
+      : '')
 
   function handleSend() {
     const text = draft.trim()
@@ -140,7 +145,7 @@ export default function ConversationSection({ onOpenFullDashboard }) {
             {messages.map((m, i) => (
               <MessageBubble key={i} message={m} />
             ))}
-            {thinking && <TypingIndicator stage={progressStage} />}
+            {thinking && <TypingIndicator stage={thinkingStage} />}
             {status === 'error' && (
               <div className="rounded border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-[12.5px]">
                 Erreur : {conversation.lastError || 'inconnue'}. Essaie de renvoyer un message.
@@ -325,6 +330,9 @@ const ERROR_LABELS = {
 function describeError(code) {
   if (!code) return 'Erreur inconnue.'
   if (ERROR_LABELS[code]) return ERROR_LABELS[code]
+  if (/401/.test(code)) {
+    return 'Accès refusé au PDF. Reconnecte-toi à my.epitech.eu si besoin, puis relance depuis la page projet. Si le sujet reste protégé, télécharge le PDF manuellement et importe-le.'
+  }
   if (code.startsWith('FETCH_FAILED')) return `Téléchargement du PDF impossible — ${code.replace('FETCH_FAILED:', '').trim()}.`
   if (code.startsWith('BAD_REQUEST')) return `Requête refusée par OpenAI — ${code.replace('BAD_REQUEST:', '').trim()}`
   return code
@@ -332,13 +340,13 @@ function describeError(code) {
 
 function BootErrorState({ code }) {
   return (
-    <Card className="p-8 max-w-xl mx-auto border-red-200">
+    <Card className="p-6 max-w-xl mx-auto border-red-200">
       <div className="flex items-start gap-3">
-        <div className="w-9 h-9 rounded border border-red-200 bg-red-50 grid place-items-center shrink-0">
-          <Sparkles className="w-4 h-4 text-red-600" />
+        <div className="w-8 h-8 rounded border border-red-200 bg-red-50 grid place-items-center shrink-0">
+          <Sparkles className="w-3.5 h-3.5 text-red-600" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-[15px] font-semibold text-gray-900 mb-1">Impossible de démarrer la conversation</h3>
+          <h3 className="text-[14px] font-semibold text-gray-900 mb-1">Impossible de démarrer la conversation</h3>
           <p className="text-[12.5px] text-gray-600 leading-relaxed">{describeError(code)}</p>
           <p className="text-[11px] text-gray-400 mt-3 font-mono">Code : {code}</p>
         </div>

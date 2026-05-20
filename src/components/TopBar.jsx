@@ -14,11 +14,15 @@ const SECTION_TITLES = {
 }
 
 export default function TopBar({ project, section, onOpenSettings }) {
-  const formattedDeadline = new Date(project.deadline).toLocaleDateString('fr-FR', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
+  const deadlineDate = project.deadline ? new Date(project.deadline) : null
+  const formattedDeadline =
+    deadlineDate && !Number.isNaN(deadlineDate.getTime())
+      ? deadlineDate.toLocaleDateString('fr-FR', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        })
+      : 'Deadline à définir'
 
   return (
     <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-sm border-b border-slate-100">

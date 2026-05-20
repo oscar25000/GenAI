@@ -55,11 +55,12 @@ function looksLikePdf(url, headers) {
 
 function consumeArmedCapture(tabId, url) {
   if (!armedCapture) return false
-  if (armedCapture.tabId !== tabId) return false
   if (Date.now() > armedCapture.expiresAt) {
     armedCapture = null
     return false
   }
+  if (armedCapture.tabId !== tabId && !armedCapture.matchAnyTab) return false
+  const sourceTabId = armedCapture.tabId
   const projectName = armedCapture.projectName
   const openDashboard = armedCapture.openDashboard !== false
   const closeSourceTab = Boolean(armedCapture.closeSourceTab)
@@ -81,7 +82,8 @@ function consumeArmedCapture(tabId, url) {
   }
 
   if (closeSourceTab) {
-    removeTabQuietly(tabId)
+    removeTabQuietly(sourceTabId)
+    if (tabId !== sourceTabId) removeTabQuietly(tabId)
   }
   return true
 }
@@ -141,7 +143,12 @@ async function fetchPdfAsBase64(pdfUrl) {
   } catch (err) {
     throw new Error(`FETCH_FAILED: ${err?.message || 'network'} (URL: ${pdfUrl.slice(0, 80)}…)`)
   }
-  if (!res.ok) throw new Error(`FETCH_FAILED: HTTP ${res.status}`)
+  if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error('FETCH_FAILED: accès refusé (HTTP 401)')
+    }
+    throw new Error(`FETCH_FAILED: HTTP ${res.status}`)
+  }
   const ct = res.headers.get('content-type') || ''
   const looksLikePdf =
     /pdf|octet-stream/i.test(ct) ||
@@ -603,6 +610,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       expiresAt: Date.now() + (msg.ttlSeconds || 30) * 1000,
       openDashboard: msg.openDashboard !== false,
       closeSourceTab: Boolean(msg.closeSourceTab),
+      matchAnyTab: Boolean(msg.matchAnyTab),
     }
     sendResponse({ ok: true, tabId })
     return true

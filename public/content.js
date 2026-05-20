@@ -21,93 +21,109 @@
   const STYLE = `
 .epipilot-btn {
   position: absolute;
-  top: 16px;
+  top: 12px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 50;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 9px;
-  font-size: 10.5px;
-  font-weight: 500;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 600;
   font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
   color: white;
   background: #2563EB;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
+  border-radius: 999px;
   cursor: pointer;
   transition: background 120ms ease, opacity 140ms ease;
   user-select: none;
   opacity: 0;
   pointer-events: none;
 }
-.epilot-has-btn:hover > .epilot-btn,
-.epilot-btn:hover,
-.epilot-btn:focus-visible {
+.epipilot-has-btn:hover > .epipilot-btn,
+.epipilot-btn:hover,
+.epipilot-btn:focus-visible {
   opacity: 1;
   pointer-events: auto;
 }
-.epilot-btn:hover { background: #1D4ED8; }
-.epilot-btn[disabled] { opacity: 0.6; cursor: not-allowed; }
-.epilot-btn svg { width: 10px; height: 10px; }
+.epipilot-btn:hover { background: #1D4ED8; }
+.epipilot-btn[disabled] { opacity: 0.6; cursor: not-allowed; }
+.epipilot-btn svg { width: 9px; height: 9px; flex-shrink: 0; display: block; }
 
-.epilot-detail-btn {
+.epipilot-detail-btn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 9px 16px;
-  margin: 14px 0;
-  font-size: 13px;
-  font-weight: 500;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 7px 12px;
+  margin: 10px 0;
+  font-size: 12px;
+  font-weight: 600;
   font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
   color: white;
   background: linear-gradient(135deg, #8257FF 0%, #5429D6 100%);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
+  border-radius: 999px;
   cursor: pointer;
-  box-shadow: 0 6px 24px -6px rgba(130, 87, 255, 0.55);
+  line-height: 1;
+  box-sizing: border-box;
+  box-shadow: 0 6px 20px -8px rgba(130, 87, 255, 0.5);
   transition: transform 120ms ease, box-shadow 120ms ease;
 }
-.epilot-detail-btn:hover {
+.epipilot-detail-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 28px -6px rgba(130, 87, 255, 0.7);
+  box-shadow: 0 8px 24px -8px rgba(130, 87, 255, 0.62);
 }
-.epilot-detail-btn svg { width: 13px; height: 13px; }
+.epipilot-detail-btn[disabled] { opacity: 0.65; cursor: progress; }
+.epipilot-detail-btn svg { width: 11px; height: 11px; flex-shrink: 0; display: block; }
 
-.epilot-fab {
+.epipilot-fab {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  right: 18px;
+  bottom: 18px;
   z-index: 2147483645;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 11px 18px;
-  font-size: 13px;
-  font-weight: 500;
+  gap: 7px;
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 600;
   font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
   color: white;
   background: linear-gradient(135deg, #8257FF 0%, #5429D6 100%);
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
   cursor: pointer;
-  box-shadow: 0 14px 40px -10px rgba(130, 87, 255, 0.65), 0 0 0 1px rgba(130, 87, 255, 0.25);
+  line-height: 1;
+  white-space: nowrap;
+  max-width: min(360px, calc(100vw - 36px));
+  min-height: 34px;
+  box-sizing: border-box;
+  box-shadow: 0 12px 34px -12px rgba(130, 87, 255, 0.62), 0 0 0 1px rgba(130, 87, 255, 0.2);
   transition: transform 120ms ease, box-shadow 120ms ease;
   animation: epipilot-fade-in 250ms ease-out;
 }
-.epilot-fab:hover {
+.epipilot-fab:hover {
   transform: translateY(-2px);
-  box-shadow: 0 18px 44px -10px rgba(130, 87, 255, 0.8);
+  box-shadow: 0 14px 38px -12px rgba(130, 87, 255, 0.75);
 }
-.epilot-fab svg { width: 14px; height: 14px; }
-.epilot-fab .status {
-  font-size: 10.5px;
+.epipilot-fab[disabled] {
+  opacity: 0.78;
+  cursor: progress;
+}
+.epipilot-fab svg { width: 12px; height: 12px; flex-shrink: 0; display: block; }
+.epipilot-fab .status {
+  font-size: 10px;
   opacity: 0.7;
   font-weight: 400;
+  min-width: 82px;
+  text-align: left;
 }
 
-.epilot-toast {
+.epipilot-toast {
   position: fixed;
   bottom: 24px;
   right: 24px;
@@ -127,7 +143,7 @@
   gap: 8px;
   animation: epipilot-fade-in 200ms ease-out;
 }
-.epilot-toast .dot {
+.epipilot-toast .dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -135,7 +151,7 @@
   box-shadow: 0 0 12px #8257FF;
 }
 
-.epilot-overlay-backdrop {
+.epipilot-overlay-backdrop {
   position: fixed;
   inset: 0;
   z-index: 2147483647;
@@ -148,7 +164,7 @@
   animation: epipilot-fade-in 200ms ease-out;
   font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
 }
-.epilot-overlay {
+.epipilot-overlay {
   width: 100%;
   max-width: 480px;
   color: #F4F1FF;
@@ -158,13 +174,13 @@
   padding: 22px;
   box-shadow: 0 30px 80px -20px rgba(0,0,0,0.7), 0 0 40px -8px rgba(130, 87, 255, 0.3);
 }
-.epilot-overlay-header {
+.epipilot-overlay-header {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
 }
-.epilot-overlay-logo {
+.epipilot-overlay-logo {
   width: 36px;
   height: 36px;
   border-radius: 12px;
@@ -173,20 +189,20 @@
   place-items: center;
   box-shadow: 0 0 28px -4px rgba(130, 87, 255, 0.7);
 }
-.epilot-overlay-logo svg { width: 16px; height: 16px; color: white; }
-.epilot-overlay-logo img { width: 24px; height: 24px; object-fit: contain; }
-.epilot-overlay h3 {
+.epipilot-overlay-logo svg { width: 16px; height: 16px; color: white; }
+.epipilot-overlay-logo img { width: 24px; height: 24px; object-fit: contain; }
+.epipilot-overlay h3 {
   margin: 0;
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
-.epilot-overlay .sub {
+.epipilot-overlay .sub {
   margin: 0;
   font-size: 11px;
   color: rgba(244, 241, 255, 0.5);
 }
-.epilot-overlay .close {
+.epipilot-overlay .close {
   margin-left: auto;
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.08);
@@ -197,10 +213,10 @@
   display: grid;
   place-items: center;
 }
-.epilot-overlay .close:hover { color: white; background: rgba(255,255,255,0.1); }
-.epilot-overlay .close svg { width: 12px; height: 12px; }
+.epipilot-overlay .close:hover { color: white; background: rgba(255,255,255,0.1); }
+.epipilot-overlay .close svg { width: 12px; height: 12px; }
 
-.epilot-project-name {
+.epipilot-project-name {
   font-size: 13px;
   color: rgba(244, 241, 255, 0.85);
   background: rgba(255,255,255,0.04);
@@ -209,7 +225,7 @@
   border-radius: 12px;
   margin-bottom: 14px;
 }
-.epilot-project-name .label {
+.epipilot-project-name .label {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -218,7 +234,7 @@
   margin-bottom: 2px;
 }
 
-.epilot-steps {
+.epipilot-steps {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -226,7 +242,7 @@
   flex-direction: column;
   gap: 8px;
 }
-.epilot-steps li {
+.epipilot-steps li {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -234,9 +250,9 @@
   color: rgba(244, 241, 255, 0.5);
   transition: color 200ms ease;
 }
-.epilot-steps li.active { color: #F4F1FF; }
-.epilot-steps li.done { color: rgba(181, 156, 255, 0.85); }
-.epilot-steps li .marker {
+.epipilot-steps li.active { color: #F4F1FF; }
+.epipilot-steps li.done { color: rgba(181, 156, 255, 0.85); }
+.epipilot-steps li .marker {
   width: 14px;
   height: 14px;
   border-radius: 50%;
@@ -246,22 +262,22 @@
   place-items: center;
   transition: all 200ms ease;
 }
-.epilot-steps li.done .marker {
+.epipilot-steps li.done .marker {
   background: linear-gradient(135deg, #8257FF, #5429D6);
   border-color: rgba(130, 87, 255, 0.5);
 }
-.epilot-steps li.done .marker::after {
+.epipilot-steps li.done .marker::after {
   content: '';
   width: 5px;
   height: 5px;
   background: white;
   border-radius: 50%;
 }
-.epilot-steps li.active .marker {
+.epipilot-steps li.active .marker {
   border-color: #8257FF;
   background: rgba(130, 87, 255, 0.15);
 }
-.epilot-steps li.active .marker::after {
+.epipilot-steps li.active .marker::after {
   content: '';
   width: 4px;
   height: 4px;
@@ -270,13 +286,13 @@
   animation: epipilot-pulse 1.2s ease-in-out infinite;
 }
 
-.epilot-actions {
+.epipilot-actions {
   margin-top: 18px;
   display: flex;
   gap: 8px;
   justify-content: flex-end;
 }
-.epilot-actions button {
+.epipilot-actions button {
   font-size: 12px;
   padding: 9px 14px;
   border-radius: 10px;
@@ -285,22 +301,22 @@
   border: 1px solid transparent;
   transition: all 120ms ease;
 }
-.epilot-actions .secondary {
+.epipilot-actions .secondary {
   background: rgba(255,255,255,0.05);
   color: rgba(244, 241, 255, 0.85);
   border-color: rgba(255,255,255,0.1);
 }
-.epilot-actions .secondary:hover { background: rgba(255,255,255,0.09); }
-.epilot-actions .primary {
+.epipilot-actions .secondary:hover { background: rgba(255,255,255,0.09); }
+.epipilot-actions .primary {
   background: linear-gradient(135deg, #8257FF, #5429D6);
   color: white;
   border-color: rgba(130, 87, 255, 0.4);
   box-shadow: 0 4px 18px -4px rgba(130, 87, 255, 0.55);
   font-weight: 500;
 }
-.epilot-actions .primary:hover { transform: translateY(-1px); }
+.epipilot-actions .primary:hover { transform: translateY(-1px); }
 
-.epilot-error {
+.epipilot-error {
   margin-top: 4px;
   padding: 10px 12px;
   border-radius: 10px;
@@ -311,11 +327,11 @@
   line-height: 1.45;
 }
 
-@keyframes epilot-fade-in {
+@keyframes epipilot-fade-in {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
-@keyframes epilot-pulse {
+@keyframes epipilot-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.5; transform: scale(1.4); }
 }
@@ -429,12 +445,32 @@
   // actual presigned URL is fetched lazily on click. We simulate the click,
   // then poll the webRequest cache for the URL the browser just fetched.
 
+  function directText(el) {
+    return Array.from(el.childNodes || [])
+      .filter((node) => node.nodeType === Node.TEXT_NODE)
+      .map((node) => node.nodeValue || '')
+      .join(' ')
+      .trim()
+  }
+
+  function pdfLabelText(el) {
+    const text = directText(el) || (el.textContent || '').trim()
+    return /\.pdf(?:\b|$)/i.test(text) ? text : ''
+  }
+
   function findPdfTreeNode(root) {
-    const all = Array.from(
+    const byDataAttribute = Array.from(
       root.querySelectorAll(
         '[data-value$=".pdf" i], [data-file$=".pdf" i], [data-name$=".pdf" i]',
       ),
     )
+    const byVisibleLabel = Array.from(
+      root.querySelectorAll(
+        'span, [role="treeitem"], [role="button"], button, a, [tabindex]:not([tabindex="-1"]), [class*="label" i], [class*="file" i], [class*="tree" i], [class*="node" i], [class*="name" i], [data-testid*="file" i]',
+      ),
+    ).filter((el) => pdfLabelText(el))
+
+    const all = [...new Set([...byDataAttribute, ...byVisibleLabel])]
     if (all.length === 0) return null
     // Prefer the file most likely to be the subject.
     const preferred = all.find((c) => {
@@ -442,6 +478,7 @@
         c.getAttribute('data-value') ||
         c.getAttribute('data-file') ||
         c.getAttribute('data-name') ||
+        pdfLabelText(c) ||
         ''
       ).toLowerCase()
       return /project|subject|sujet/.test(v)
@@ -492,6 +529,7 @@
             ttlSeconds,
             openDashboard: options.openDashboard !== false,
             closeSourceTab: Boolean(options.closeSourceTab),
+            matchAnyTab: options.matchAnyTab !== false,
           },
           (res) => resolve(Boolean(res?.ok)),
         )
@@ -598,6 +636,12 @@
       .replace(/&amp;/g, '&')
       .replace(/&quot;/g, '"')
       .replace(/&#x27;/g, "'")
+    let decodedUri = ''
+    try {
+      decodedUri = decodeURIComponent(decoded)
+    } catch {
+      decodedUri = decoded
+    }
     const patterns = [
       // Direct PDF link
       /https?:\/\/[^\s"'<>\\]+\.pdf(?:\?[^\s"'<>\\]*)?/i,
@@ -606,9 +650,11 @@
       // Generic presigned with .pdf somewhere in the path
       /https?:\/\/[^\s"'<>\\]+\/[^\s"'<>\\]*\.pdf[^\s"'<>\\]*/i,
     ]
-    for (const re of patterns) {
-      const m = decoded.match(re)
-      if (m) return m[0]
+    for (const source of [decoded, decodedUri]) {
+      for (const re of patterns) {
+        const m = source.match(re)
+        if (m) return m[0]
+      }
     }
     return null
   }
@@ -914,7 +960,17 @@
   // ────────────────────────────────────── detail page support ──────────
   let detailBtnInjected = false
   let autoTriggered = false
+  let pendingAutoStartInFlight = false
+  let pendingAutoRetryTimer = null
   let fabEl = null
+
+  function scheduleDetailRetry(delay = 700) {
+    clearTimeout(pendingAutoRetryTimer)
+    pendingAutoRetryTimer = setTimeout(() => {
+      pendingAutoRetryTimer = null
+      if (isDetailPage()) refreshDetailPage()
+    }, delay)
+  }
 
   function ensureFab() {
     if (fabEl && document.body.contains(fabEl)) return fabEl
@@ -923,16 +979,20 @@
     fabEl.className = 'epipilot-fab'
     fabEl.innerHTML = `${ICONS.sparkles}<span>Analyser avec EpiPilot</span><span class="status">recherche du PDF…</span>`
     fabEl.addEventListener('click', async () => {
+      if (fabEl.disabled) return
       const name = extractProjectNameFromDetail()
+      fabEl.disabled = true
       updateFabStatus('Récupération du PDF…')
       showToast('Ouverture du dashboard…')
       try {
-        await chrome.runtime.sendMessage({
+        const res = await chrome.runtime.sendMessage({
           type: 'epipilot:prepare-dashboard',
           projectName: name,
         })
+        if (!res?.ok) throw new Error(res?.code || 'DASHBOARD_FAILED')
       } catch {
         updateFabStatus('Erreur dashboard')
+        fabEl.disabled = false
         return
       }
 
@@ -945,9 +1005,10 @@
       if (result?.url) {
         triggerDetailAnalysis(result.url, name, { openDashboard: false })
       } else if (result?.deferred) {
-        updateFabStatus('PDF capturé…')
+        updateFabStatus('PDF en cours…')
       } else {
         updateFabStatus('PDF introuvable')
+        fabEl.disabled = false
         chrome.runtime.sendMessage({
           type: 'epipilot:session-error',
           code: 'PDF_NOT_FOUND',
@@ -1099,35 +1160,16 @@
     try {
       chrome.storage.local.get(['epipilot_pending'], async (res) => {
         const p = res?.epipilot_pending
-        if (!p || autoTriggered) return
-        const isFresh = Date.now() - (p.timestamp || 0) < 5 * 60_000
+        if (!p || autoTriggered || pendingAutoStartInFlight) return
+        const age = Date.now() - (p.timestamp || 0)
+        const isFresh = age < 5 * 60_000
         if (!isFresh) {
           chrome.storage.local.remove(['epipilot_pending'])
           return
         }
-        autoTriggered = true
-        chrome.storage.local.remove(['epipilot_pending'])
-        updateFabStatus('Récupération du PDF…')
-        showToast('Récupération du PDF…')
-        const analysisOptions = {
-          openDashboard: p.openDashboard !== false,
-          closeSourceTab: Boolean(p.closeSourceTab),
-        }
-        if (quickUrl) {
-          triggerDetailAnalysis(quickUrl, p.projectName, analysisOptions)
-          return
-        }
-        const r = await obtainPdfUrl({
-          allowClick: true,
-          projectName: p.projectName,
-          captureOptions: analysisOptions,
-          sameTabPdfOnly: true,
-        })
-        if (r?.url) {
-          triggerDetailAnalysis(r.url, p.projectName, analysisOptions)
-        } else if (r?.deferred) {
-          showToast('Le dashboard s\'ouvrira dès que le PDF est récupéré.')
-        } else {
+        if (age > 45_000) {
+          chrome.storage.local.remove(['epipilot_pending'])
+          autoTriggered = true
           updateFabStatus('PDF introuvable')
           if (p.openDashboard === false) {
             chrome.runtime.sendMessage({
@@ -1135,9 +1177,43 @@
               code: 'PDF_NOT_FOUND',
             }).catch(() => {})
           }
-          showToast(
-            'Impossible de récupérer le PDF — clique sur le treeitem manuellement.',
-          )
+          showToast('Impossible de récupérer le PDF automatiquement.')
+          return
+        }
+
+        pendingAutoStartInFlight = true
+        updateFabStatus('Récupération du PDF…')
+        const analysisOptions = {
+          openDashboard: p.openDashboard !== false,
+          closeSourceTab: Boolean(p.closeSourceTab),
+        }
+        try {
+          if (quickUrl) {
+            autoTriggered = true
+            chrome.storage.local.remove(['epipilot_pending'])
+            triggerDetailAnalysis(quickUrl, p.projectName, analysisOptions)
+            return
+          }
+          const r = await obtainPdfUrl({
+            allowClick: true,
+            projectName: p.projectName,
+            captureOptions: analysisOptions,
+            sameTabPdfOnly: true,
+          })
+          if (r?.url) {
+            autoTriggered = true
+            chrome.storage.local.remove(['epipilot_pending'])
+            triggerDetailAnalysis(r.url, p.projectName, analysisOptions)
+          } else if (r?.deferred) {
+            autoTriggered = true
+            chrome.storage.local.remove(['epipilot_pending'])
+            showToast('Le dashboard s\'ouvrira dès que le PDF est récupéré.')
+          } else {
+            updateFabStatus('PDF en attente…')
+            scheduleDetailRetry()
+          }
+        } finally {
+          pendingAutoStartInFlight = false
         }
       })
     } catch {

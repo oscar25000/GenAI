@@ -153,7 +153,7 @@ const DOCUMENTS = [
     icon: FileText,
     title: 'PDF',
     ext: '.pdf',
-    mime: 'application/json',
+    mime: 'application/pdf',
     desc: "Document de présentation pour les coachs et la soutenance. Synthèse exécutive du projet.",
     canCopy: false,
   },
@@ -161,11 +161,16 @@ const DOCUMENTS = [
 
 function buildMarkdown(project) {
   const lines = []
+  const deadline = project.deadline ? new Date(project.deadline) : null
+  const deadlineLabel =
+    deadline && !Number.isNaN(deadline.getTime())
+      ? deadline.toLocaleDateString('fr-FR')
+      : 'à définir'
   lines.push(`# ${project.name}`)
   lines.push('')
   lines.push(`> ${project.summary.goal}`)
   lines.push('')
-  lines.push(`**Deadline** · ${new Date(project.deadline).toLocaleDateString('fr-FR')}  `)
+  lines.push(`**Deadline** · ${deadlineLabel}  `)
   lines.push(`**Difficulté** · ${project.difficulty}/10  `)
   lines.push(`**Risque** · ${project.riskScore}/100  `)
   lines.push(`**Temps estimé** · ${project.estimatedHours}h`)
@@ -192,6 +197,156 @@ function buildMarkdown(project) {
   for (const c of project.checklist)
     lines.push(`- [${c.done ? 'x' : ' '}] ${c.label}`)
   return lines.join('\n')
+}
+
+function filenameSafe(name) {
+  return (name || 'epipilot-plan')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    || 'epipilot-plan'
+}
+
+function pdfText(value) {
+  return String(value ?? '')
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[•🚩✓]/g, '-')
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/[–—]/g, '-')
+    .replace(/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF]/g, '')
+}
+
+function escapePdfString(value) {
+  return pdfText(value).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)')
+}
+
+function wrapPdfText(text, max = 86) {
+  const words = pdfText(text).split(/\s+/).filter(Boolean)
+  const lines = []
+  let line = ''
+  for (const word of words) {
+    const next = line ? `${line} ${word}` : word
+    if (next.length > max && line) {
+      lines.push(line)
+      line = word
+    } else {
+      line = next
+    }
+  }
+  if (line) lines.push(line)
+  return lines.length ? lines : ['']
+}
+
+function buildPdf(project) {
+  const pages = []
+  const margin = 48
+  const pageHeight = 842
+  const bottom = 52
+  const lineHeight = 15
+  let y = pageHeight - margin
+  let ops = []
+
+  function newPage() {
+    if (ops.length) pages.push([...ops, 'ET'].join('\n'))
+    ops = ['BT', '/F1 11 Tf']
+    y = pageHeight - margin
+  }
+
+  function line(text, { size = 11, gap = lineHeight, indent = 0 } = {}) {
+    if (y < bottom) newPage()
+    ops.push(`/F1 ${size} Tf`)
+    ops.push(`1 0 0 1 ${margin + indent} ${y} Tm (${escapePdfString(text)}) Tj`)
+    y -= gap
+  }
+
+  function wrapped(text, options = {}) {
+    for (const part of wrapPdfText(text, options.max || 86)) {
+      line(part, options)
+    }
+  }
+
+  function section(title) {
+    y -= 8
+    line(title.toUpperCase(), { size: 12, gap: 18 })
+  }
+
+  newPage()
+  line(project.name || 'Projet Epitech', { size: 22, gap: 26 })
+  wrapped(project.summary?.goal || 'Plan de projet genere avec Epilot.', { size: 12, gap: 17, max: 78 })
+  y -= 6
+  const deadline = project.deadline ? new Date(project.deadline) : null
+  line(`Deadline : ${deadline && !Number.isNaN(deadline.getTime()) ? deadline.toLocaleDateString('fr-FR') : 'a definir'}`)
+  line(`Difficulte : ${project.difficulty || 0}/10`)
+  line(`Risque : ${project.riskScore || 0}/100`)
+  line(`Temps estime : ${project.estimatedHours || 0}h`)
+
+  if (project.summary?.deliverables?.length) {
+    section('Livrables')
+    project.summary.deliverables.forEach((item) => wrapped(`- ${item}`, { indent: 10, max: 82 }))
+  }
+
+  if (project.warnings?.length) {
+    section('A ne pas oublier')
+    project.warnings.forEach((warning) => {
+      wrapped(`- [${warning.severity}] ${warning.title} - ${warning.detail}`, { indent: 10, max: 82 })
+    })
+  }
+
+  if (project.tasks?.length) {
+    section('Taches')
+    project.tasks.forEach((task) => {
+      wrapped(`- ${task.title} (${task.category}, ${task.priority}, ${task.hours || 0}h) - ${task.description}`, { indent: 10, max: 82 })
+    })
+  }
+
+  if (project.planning?.length) {
+    section('Planning')
+    project.planning.forEach((sprint) => {
+      wrapped(`${sprint.label} - ${sprint.range} : ${sprint.theme}`, { indent: 10, max: 82 })
+      ;(sprint.milestones || []).forEach((m) => wrapped(`  - ${m}`, { indent: 18, max: 80 }))
+    })
+  }
+
+  if (project.checklist?.length) {
+    section('Checklist finale')
+    project.checklist.forEach((item) => wrapped(`- [${item.done ? 'x' : ' '}] ${item.label}`, { indent: 10, max: 82 }))
+  }
+
+  pages.push([...ops, 'ET'].join('\n'))
+
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+  ]
+  const pageObjectIds = []
+  pages.forEach((content) => {
+    const pageId = objects.length + 1
+    const contentId = objects.length + 2
+    pageObjectIds.push(pageId)
+    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents ${contentId} 0 R >>`)
+    objects.push(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`)
+  })
+  objects[1] = `<< /Type /Pages /Kids [${pageObjectIds.map((id) => `${id} 0 R`).join(' ')}] /Count ${pageObjectIds.length} >>`
+
+  let pdf = '%PDF-1.4\n'
+  const offsets = [0]
+  objects.forEach((obj, index) => {
+    offsets.push(pdf.length)
+    pdf += `${index + 1} 0 obj\n${obj}\nendobj\n`
+  })
+  const xrefOffset = pdf.length
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`
+  offsets.slice(1).forEach((offset) => {
+    pdf += `${String(offset).padStart(10, '0')} 00000 n \n`
+  })
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`
+
+  return Uint8Array.from(pdf, (char) => char.charCodeAt(0) & 0xff)
 }
 
 export default function ExportSection({ project }) {
@@ -344,7 +499,7 @@ export default function ExportSection({ project }) {
                       onClick={() =>
                         d.id === 'markdown'
                           ? download('epipilot-plan.md', markdown, d.mime)
-                          : download(`epipilot-${d.id}.json`, JSON.stringify(project, null, 2), d.mime)
+                          : download(`${filenameSafe(project.name)}-plan.pdf`, buildPdf(project), d.mime)
                       }
                       className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-[12px] font-semibold text-white transition-colors"
                     >

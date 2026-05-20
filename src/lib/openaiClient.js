@@ -433,8 +433,15 @@ export async function chatTurn({
     }
   }
 
+  const finalAssistantText = collectedText || "Le plan est en cours de structuration. Si tu ne vois pas encore de réponse, relance une fois la conversation ou vérifie qu'aucune erreur n'est affichée en haut." 
+
+  input.push({
+    role: 'assistant',
+    content: finalAssistantText,
+  })
+
   return {
-    assistantText: collectedText || "(boucle d'outils interrompue — relance la conversation)",
+    assistantText: finalAssistantText,
     project: workingProject,
     history: input,
     usage: lastUsage,
